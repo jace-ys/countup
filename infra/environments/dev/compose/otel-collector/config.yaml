@@ -1,0 +1,211 @@
+---
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: postgres
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=postgres]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 9187
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+      - job_name: grafana
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=grafana]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 3000
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+      - job_name: otel-collector
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=otel-collector]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 8888
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+      - job_name: promtail
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=promtail]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 3080
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+      - job_name: loki
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=loki]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 3100
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+      - job_name: tempo
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=tempo]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 3200
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+      - job_name: mimir
+        scrape_interval: 30s
+        docker_sd_configs:
+        - host: unix:///var/run/docker.sock
+          filters:
+          - name: network
+            values: [countup_default]
+          - name: label
+            values: [service=mimir]
+        relabel_configs:
+        - action: 'keep'
+          source_labels: ['__meta_docker_port_private']
+          regex: 3300
+        - source_labels: ['__meta_docker_container_name']
+          regex: '/(.*)'
+          target_label: 'container'
+        - source_labels: ['__meta_docker_container_label_service']
+          target_label: 'service'
+        - action: labelmap
+          regex: '__meta_docker_container_label_(component|tier|environment)'
+
+processors:
+  batch:
+
+  tail_sampling:
+    decision_wait: 30s
+    policies:
+    - name: sample-error-traces
+      type: status_code
+      status_code: {status_codes: [ERROR]}
+    - name: sample-long-traces
+      type: latency
+      latency: {threshold_ms: 200}
+
+  transform/otlp:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["service"], resource.attributes["service.name"])
+      - set(attributes["service_version"], resource.attributes["service.version"])
+      - set(attributes["tier"], resource.attributes["tier"])
+      - set(attributes["environment"], resource.attributes["environment"])
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  prometheusremotewrite/mimir:
+    endpoint: http://mimir:3300/api/v1/push
+    tls:
+      insecure: true
+
+service:
+  telemetry:
+    logs:
+      encoding: json
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo]
+
+    metrics/otlp:
+      receivers: [otlp]
+      processors: [batch, transform/otlp]
+      exporters: [prometheusremotewrite/mimir]
+
+    metrics/prometheus:
+      receivers: [prometheus]
+      processors: [batch]
+      exporters: [prometheusremotewrite/mimir]

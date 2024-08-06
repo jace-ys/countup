@@ -1,0 +1,42 @@
+---
+name: digger
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        required: true
+        description: Input for digger-spec
+      run_name:
+        required: false
+        description: Name for the workflow run
+
+run-name: ${{ inputs.run_name }}
+
+jobs:
+  digger-job:
+    name: Digger
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      id-token: write
+      pull-requests: write
+      issues: read
+      statuses: write
+    steps:
+    - uses: actions/checkout@v4
+    - name: digger run
+      uses: diggerhq/digger@vLatest
+      with:
+        digger-spec: ${{ inputs.spec }}
+        setup-terraform: true
+        terraform-version: v1.9.8
+        cache-dependencies: true
+        setup-google-cloud: true
+        google-service-account: digger@emp-jace-a850.iam.gserviceaccount.com
+        google-workload-identity-provider: projects/639381616334/locations/global/workloadIdentityPools/digger/providers/digger
+        reporting-strategy: latest_run_comment
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
