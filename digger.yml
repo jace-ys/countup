@@ -1,0 +1,8 @@
+---
+telemetry: false
+traverse_to_nested_projects: true
+
+projects:
+- name: dev
+  dir: infra/environments/dev
+  workspace: dev
