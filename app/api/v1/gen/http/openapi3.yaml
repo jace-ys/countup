@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info:
+    title: Count Up
+    description: A production-ready Go service deployed on Kubernetes
+    version: 1.0.0
+servers:
+    - url: http://localhost:8080
+    - url: http://localhost:80
+paths:
+    /:
+        get:
+            tags:
+                - web
+            summary: index web
+            operationId: web#index
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        text/html:
+                            schema:
+                                type: string
+                                example:
+                                    - 78
+                                    - 101
+                                    - 109
+                                    - 111
+                                    - 32
+                                    - 109
+                                    - 97
+                                    - 103
+                                    - 110
+                                    - 105
+                                    - 32
+                                    - 100
+                                    - 117
+                                    - 99
+                                    - 105
+                                    - 109
+                                    - 117
+                                    - 115
+                                    - 32
+                                    - 105
+                                    - 109
+                                    - 112
+                                    - 101
+                                    - 100
+                                    - 105
+                                    - 116
+                                    - 46
+                                format: binary
+                            example:
+                                - 77
+                                - 111
+                                - 108
+                                - 108
+                                - 105
+                                - 116
+                                - 105
+                                - 97
+                                - 32
+                                - 100
+                                - 101
+                                - 108
+                                - 101
+                                - 110
+                                - 105
+                                - 116
+                                - 105
+                                - 32
+                                - 101
+                                - 120
+                                - 112
+                                - 101
+                                - 100
+                                - 105
+                                - 116
+                                - 97
+                                - 32
+                                - 97
+                                - 99
+                                - 99
+                                - 117
+                                - 115
+                                - 97
+                                - 110
+                                - 116
+                                - 105
+                                - 117
+                                - 109
+                                - 46
+    /another:
+        get:
+            tags:
+                - web
+            summary: another web
+            operationId: web#another
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        text/html:
+                            schema:
+                                type: string
+                                example:
+                                    - 78
+                                    - 117
+                                    - 109
+                                    - 113
+                                    - 117
+                                    - 97
+                                    - 109
+                                    - 32
+                                    - 100
+                                    - 111
+                                    - 108
+                                    - 111
+                                    - 114
+                                    - 105
+                                    - 98
+                                    - 117
+                                    - 115
+                                    - 32
+                                    - 115
+                                    - 117
+                                    - 115
+                                    - 99
+                                    - 105
+                                    - 112
+                                    - 105
+                                    - 116
+                                    - 46
+                                format: binary
+                            example:
+                                - 73
+                                - 110
+                                - 118
+                                - 101
+                                - 110
+                                - 116
+                                - 111
+                                - 114
+                                - 101
+                                - 32
+                                - 108
+                                - 97
+                                - 98
+                                - 111
+                                - 114
+                                - 101
+                                - 32
+                                - 101
+                                - 114
+                                - 114
+                                - 111
+                                - 114
+                                - 32
+                                - 97
+                                - 110
+                                - 105
+                                - 109
+                                - 105
+                                - 46
+    /counter:
+        get:
+            tags:
+                - api
+            summary: CounterGet api
+            operationId: api#CounterGet
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CounterInfo'
+                            example:
+                                count: 1425094436
+                                last_increment_at: Iste et distinctio accusantium.
+                                last_increment_by: Sequi ipsa aliquam esse.
+                                next_finalize_at: A non.
+                "401":
+                    description: 'unauthorized: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "429":
+                    description: 'existing_increment_request: Too Many Requests response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /counter/inc:
+        post:
+            tags:
+                - api
+            summary: CounterIncrement api
+            operationId: api#CounterIncrement
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CounterIncrementRequestBody'
+                        example:
+                            user: Nihil doloribus et sed sequi consequatur.
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CounterInfo'
+                            example:
+                                count: 278214526
+                                last_increment_at: Inventore accusantium.
+                                last_increment_by: Laborum vel mollitia aut.
+                                next_finalize_at: Voluptas ut eius.
+                "401":
+                    description: 'unauthorized: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "429":
+                    description: 'existing_increment_request: Too Many Requests response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /echo:
+        post:
+            tags:
+                - api
+            summary: Echo api
+            operationId: api#Echo
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EchoRequestBody'
+                        example:
+                            text: Vel omnis quo sit.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EchoRequestBody'
+                            example:
+                                text: Distinctio illo.
+                "401":
+                    description: 'unauthorized: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "429":
+                    description: 'existing_increment_request: Too Many Requests response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /openapi.json:
+        get:
+            tags:
+                - api
+            summary: Download gen/http/openapi3.json
+            operationId: api#/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+    /static/{*path}:
+        get:
+            tags:
+                - web
+            summary: Download static/
+            operationId: web#/static/{*path}
+            parameters:
+                - name: path
+                  in: path
+                  description: Relative file path
+                  required: true
+            responses:
+                "200":
+                    description: File not found
+                "404":
+                    description: File not found
+components:
+    schemas:
+        CounterIncrementRequestBody:
+            type: object
+            properties:
+                user:
+                    type: string
+                    example: Omnis debitis.
+            example:
+                user: Eos minima dolorem id sunt voluptates voluptas.
+            required:
+                - user
+        CounterInfo:
+            type: object
+            properties:
+                count:
+                    type: integer
+                    example: 495281550
+                    format: int32
+                last_increment_at:
+                    type: string
+                    example: Aut tenetur eos.
+                last_increment_by:
+                    type: string
+                    example: Consectetur odio.
+                next_finalize_at:
+                    type: string
+                    example: Laborum et veniam et illum quaerat et.
+            example:
+                count: 1773148578
+                last_increment_at: Voluptatum omnis possimus saepe deleniti.
+                last_increment_by: Corporis est sunt voluptatem reprehenderit neque modi.
+                next_finalize_at: Rerum facere veritatis.
+            required:
+                - count
+                - last_increment_by
+                - last_increment_at
+                - next_finalize_at
+        EchoRequestBody:
+            type: object
+            properties:
+                text:
+                    type: string
+                    example: Cumque maxime dolore hic laboriosam.
+            example:
+                text: Aut recusandae cum.
+            required:
+                - text
+        Error:
+            type: object
+            properties:
+                fault:
+                    type: boolean
+                    description: Is the error a server-side fault?
+                    example: true
+                id:
+                    type: string
+                    description: ID is a unique identifier for this particular occurrence of the problem.
+                    example: 123abc
+                message:
+                    type: string
+                    description: Message is a human-readable explanation specific to this occurrence of the problem.
+                    example: parameter 'p' must be an integer
+                name:
+                    type: string
+                    description: Name is the name of this class of errors.
+                    example: bad_request
+                temporary:
+                    type: boolean
+                    description: Is the error temporary?
+                    example: true
+                timeout:
+                    type: boolean
+                    description: Is the error a timeout?
+                    example: false
+            example:
+                fault: false
+                id: 123abc
+                message: parameter 'p' must be an integer
+                name: bad_request
+                temporary: true
+                timeout: false
+            required:
+                - name
+                - id
+                - message
+                - temporary
+                - timeout
+                - fault
+tags:
+    - name: api
+    - name: web
