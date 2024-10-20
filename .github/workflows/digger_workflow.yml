@@ -36,6 +36,7 @@ jobs:
         setup-google-cloud: true
         google-service-account: digger@emp-jace-a850.iam.gserviceaccount.com
         google-workload-identity-provider: projects/639381616334/locations/global/workloadIdentityPools/digger/providers/digger
+        reporting-strategy: latest_run_comment
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
