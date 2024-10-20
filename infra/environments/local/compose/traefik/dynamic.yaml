@@ -1,0 +1,21 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/traefik.cert
+        keyFile: /etc/traefik/certs/traefik.key
+
+http:
+  routers:
+    countup:
+      entryPoints:
+      - localhttps
+      service: countup
+      rule: Host(`localhost`)
+      tls: {}
+
+  services:
+    countup:
+      loadBalancer:
+        servers:
+        - url: http://host.docker.internal:8080
