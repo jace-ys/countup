@@ -1,0 +1,595 @@
+openapi: 3.0.3
+info:
+    title: Count Up
+    description: A production-ready Go service deployed on Kubernetes
+    version: 1.0.0
+servers:
+    - url: http://localhost:8080
+    - url: http://localhost:80
+paths:
+    /:
+        get:
+            tags:
+                - web
+            summary: Index web
+            operationId: web#Index
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        text/html:
+                            schema:
+                                type: string
+                                example:
+                                    - 65
+                                    - 116
+                                    - 113
+                                    - 117
+                                    - 101
+                                    - 32
+                                    - 105
+                                    - 108
+                                    - 108
+                                    - 111
+                                    - 32
+                                    - 115
+                                    - 101
+                                    - 113
+                                    - 117
+                                    - 105
+                                    - 32
+                                    - 110
+                                    - 111
+                                    - 110
+                                    - 32
+                                    - 97
+                                    - 117
+                                    - 116
+                                    - 32
+                                    - 100
+                                    - 111
+                                    - 108
+                                    - 111
+                                    - 114
+                                    - 101
+                                    - 109
+                                    - 46
+                                format: binary
+                            example:
+                                - 86
+                                - 111
+                                - 108
+                                - 117
+                                - 112
+                                - 116
+                                - 97
+                                - 116
+                                - 101
+                                - 109
+                                - 32
+                                - 108
+                                - 97
+                                - 98
+                                - 111
+                                - 114
+                                - 117
+                                - 109
+                                - 32
+                                - 111
+                                - 102
+                                - 102
+                                - 105
+                                - 99
+                                - 105
+                                - 105
+                                - 115
+                                - 46
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /another:
+        get:
+            tags:
+                - web
+            summary: Another web
+            operationId: web#Another
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        text/html:
+                            schema:
+                                type: string
+                                example:
+                                    - 68
+                                    - 111
+                                    - 108
+                                    - 111
+                                    - 114
+                                    - 105
+                                    - 98
+                                    - 117
+                                    - 115
+                                    - 32
+                                    - 118
+                                    - 111
+                                    - 108
+                                    - 117
+                                    - 112
+                                    - 116
+                                    - 97
+                                    - 116
+                                    - 101
+                                    - 109
+                                    - 32
+                                    - 104
+                                    - 105
+                                    - 99
+                                    - 32
+                                    - 116
+                                    - 111
+                                    - 116
+                                    - 97
+                                    - 109
+                                    - 32
+                                    - 114
+                                    - 101
+                                    - 112
+                                    - 117
+                                    - 100
+                                    - 105
+                                    - 97
+                                    - 110
+                                    - 100
+                                    - 97
+                                    - 101
+                                    - 46
+                                format: binary
+                            example:
+                                - 82
+                                - 101
+                                - 112
+                                - 101
+                                - 108
+                                - 108
+                                - 101
+                                - 110
+                                - 100
+                                - 117
+                                - 115
+                                - 32
+                                - 113
+                                - 117
+                                - 111
+                                - 32
+                                - 101
+                                - 114
+                                - 114
+                                - 111
+                                - 114
+                                - 46
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /api/v1/auth/token:
+        post:
+            tags:
+                - api
+            summary: AuthToken api
+            operationId: api#AuthToken
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthTokenRequestBody'
+                        example:
+                            access_token: Itaque unde qui ut molestiae et omnis.
+                            provider: google
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthTokenResponseBody'
+                            example:
+                                token: Est asperiores.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "403":
+                    description: 'access_denied: Forbidden response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /api/v1/counter:
+        get:
+            tags:
+                - api
+            summary: CounterGet api
+            operationId: api#CounterGet
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CounterInfo'
+                            example:
+                                count: 1713586082
+                                last_increment_at: Non accusantium eos culpa autem illum architecto.
+                                last_increment_by: Corrupti pariatur eius quis fugiat eum inventore.
+                                next_finalize_at: Vel enim ut autem quo.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "403":
+                    description: 'access_denied: Forbidden response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+        post:
+            tags:
+                - api
+            summary: CounterIncrement api
+            operationId: api#CounterIncrement
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CounterInfo'
+                            example:
+                                count: 1227174102
+                                last_increment_at: Harum error iste ipsam.
+                                last_increment_by: Quae cupiditate.
+                                next_finalize_at: Nobis non est.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "403":
+                    description: 'access_denied: Forbidden response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "429":
+                    description: 'existing_increment_request: Too Many Requests response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+            security:
+                - jwt_header_Authorization:
+                    - api.user
+    /api/v1/openapi.json:
+        get:
+            tags:
+                - api
+            summary: Download gen/http/openapi3.json
+            operationId: api#/api/v1/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+    /login/google:
+        get:
+            tags:
+                - web
+            summary: LoginGoogle web
+            operationId: web#LoginGoogle
+            responses:
+                "302":
+                    description: Found response.
+                    headers:
+                        Location:
+                            schema:
+                                type: string
+                                example: Optio et.
+                            example: Mollitia similique dignissimos.
+                        Set-Cookie:
+                            schema:
+                                type: string
+                                example: Libero soluta.
+                            example: Consequuntur quo excepturi eos dolor voluptatem.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /login/google/callback:
+        get:
+            tags:
+                - web
+            summary: LoginGoogleCallback web
+            operationId: web#LoginGoogleCallback
+            parameters:
+                - name: code
+                  in: query
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    example: Quia et nulla.
+                  example: Explicabo veritatis labore quidem deserunt enim qui.
+                - name: state
+                  in: query
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    example: Aut ab.
+                  example: Officiis consequuntur mollitia provident recusandae.
+                - name: countup.session
+                  in: cookie
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    example: Distinctio libero veritatis sint accusamus nulla.
+                  example: Expedita sint inventore possimus cumque magni.
+            responses:
+                "302":
+                    description: Found response.
+                    headers:
+                        Location:
+                            schema:
+                                type: string
+                                example: Deleniti facere eius eos.
+                            example: Omnis distinctio adipisci.
+                        Set-Cookie:
+                            schema:
+                                type: string
+                                example: Aut magni consequatur omnis.
+                            example: Iusto architecto corporis commodi aut minus.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /logout:
+        get:
+            tags:
+                - web
+            summary: Logout web
+            operationId: web#Logout
+            parameters:
+                - name: countup.session
+                  in: cookie
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    example: Expedita commodi quia eos at harum.
+                  example: Quo aut.
+            responses:
+                "302":
+                    description: Found response.
+                    headers:
+                        Location:
+                            schema:
+                                type: string
+                                example: Illo qui sit tenetur accusamus tempore laboriosam.
+                            example: Ea voluptas sit consectetur alias libero saepe.
+                        Set-Cookie:
+                            schema:
+                                type: string
+                                example: Ipsam autem.
+                            example: Necessitatibus cupiditate molestiae hic sint consequatur ipsa.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /session/token:
+        get:
+            tags:
+                - web
+            summary: SessionToken web
+            operationId: web#SessionToken
+            parameters:
+                - name: countup.session
+                  in: cookie
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    example: Et laboriosam odit enim id quod qui.
+                  example: Molestiae asperiores omnis laborum ea voluptatum dignissimos.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthTokenResponseBody'
+                            example:
+                                token: Et consectetur.
+                "401":
+                    description: 'unauthenticated: Unauthorized response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /static/*:
+        get:
+            tags:
+                - web
+            summary: Download static/
+            operationId: web#/static/*
+            responses:
+                "200":
+                    description: File downloaded
+    /teapot/echo:
+        post:
+            tags:
+                - teapot
+            summary: Echo teapot
+            operationId: teapot#Echo
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EchoRequestBody'
+                        example:
+                            text: Eos itaque.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EchoRequestBody'
+                            example:
+                                text: Et veniam et illum quaerat et et.
+                "400":
+                    description: 'unwell: Bad Request response.'
+                    content:
+                        application/vnd.goa.error:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /teapot/openapi.json:
+        get:
+            tags:
+                - teapot
+            summary: Download gen/http/openapi3.json
+            operationId: teapot#/teapot/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+components:
+    schemas:
+        AuthTokenRequestBody:
+            type: object
+            properties:
+                access_token:
+                    type: string
+                    example: Unde eligendi et sint velit.
+                provider:
+                    type: string
+                    example: google
+                    enum:
+                        - google
+            example:
+                access_token: Eius quasi fugiat quia facilis sint eligendi.
+                provider: google
+            required:
+                - provider
+                - access_token
+        AuthTokenResponseBody:
+            type: object
+            properties:
+                token:
+                    type: string
+                    example: Sit impedit.
+            example:
+                token: Nulla corrupti non expedita aliquam illo cum.
+            required:
+                - token
+        CounterInfo:
+            type: object
+            properties:
+                count:
+                    type: integer
+                    example: 271655255
+                    format: int32
+                last_increment_at:
+                    type: string
+                    example: Rerum sunt.
+                last_increment_by:
+                    type: string
+                    example: Perspiciatis laborum distinctio rem ipsam.
+                next_finalize_at:
+                    type: string
+                    example: Distinctio et rerum.
+            example:
+                count: 1309385137
+                last_increment_at: Sed velit.
+                last_increment_by: Nihil totam ipsum.
+                next_finalize_at: Itaque temporibus eius voluptatem aliquam aut mollitia.
+            required:
+                - count
+                - last_increment_by
+                - last_increment_at
+                - next_finalize_at
+        EchoRequestBody:
+            type: object
+            properties:
+                text:
+                    type: string
+                    example: Enim alias sunt.
+            example:
+                text: Dolores velit.
+            required:
+                - text
+        Error:
+            type: object
+            properties:
+                fault:
+                    type: boolean
+                    description: Is the error a server-side fault?
+                    example: true
+                id:
+                    type: string
+                    description: ID is a unique identifier for this particular occurrence of the problem.
+                    example: 123abc
+                message:
+                    type: string
+                    description: Message is a human-readable explanation specific to this occurrence of the problem.
+                    example: parameter 'p' must be an integer
+                name:
+                    type: string
+                    description: Name is the name of this class of errors.
+                    example: bad_request
+                temporary:
+                    type: boolean
+                    description: Is the error temporary?
+                    example: true
+                timeout:
+                    type: boolean
+                    description: Is the error a timeout?
+                    example: true
+            example:
+                fault: true
+                id: 123abc
+                message: parameter 'p' must be an integer
+                name: bad_request
+                temporary: true
+                timeout: false
+            required:
+                - name
+                - id
+                - message
+                - temporary
+                - timeout
+                - fault
+    securitySchemes:
+        jwt_header_Authorization:
+            type: http
+            scheme: bearer
+tags:
+    - name: api
+    - name: web
+    - name: teapot

@@ -1,0 +1,44 @@
+---
+version: "2"
+
+sql:
+- name: userstore
+  engine: postgresql
+  queries: schema/users.sql
+  schema: schema/schema.sql
+  gen:
+    go:
+      package: userstore
+      out: internal/service/user/store
+      sql_package: pgx/v5
+      emit_interface: true
+      emit_methods_with_db_argument: true
+      overrides:
+      - column: users.id
+        go_type:
+          import: github.com/jace-ys/countup/internal/idgen
+          type: ID[idgen.User]
+
+- name: scorestore
+  engine: postgresql
+  queries: schema/scores.sql
+  schema: schema/schema.sql
+  gen:
+    go:
+      package: scorestore
+      out: internal/service/score/store
+      sql_package: pgx/v5
+      emit_interface: true
+      emit_methods_with_db_argument: true
+
+- name: counterstore
+  engine: postgresql
+  queries: schema/counter.sql
+  schema: schema/schema.sql
+  gen:
+    go:
+      package: counterstore
+      out: internal/service/counter/store
+      sql_package: pgx/v5
+      emit_interface: true
+      emit_methods_with_db_argument: true
