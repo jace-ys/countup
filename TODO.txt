@@ -1,0 +1,7 @@
+- Missing spans
+- Dev environment
+- Atlas migrate apply
+- Templ, Alpine.js, Tailwind, Air
+- Hot reload
+- Scoreboard
+- Test error handling

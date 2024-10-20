@@ -1,0 +1,70 @@
+---
+apiVersion: 1
+
+prune: true
+
+datasources:
+- name: Mimir
+  type: prometheus
+  access: proxy
+  uid: mimir
+  url: http://mimir:3300/prometheus
+  jsonData:
+    httpMethod: POST
+    exemplarTraceIdDestinations:
+    - datasourceUid: tempo
+      name: trace_id
+
+- name: Tempo
+  type: tempo
+  access: proxy
+  uid: tempo
+  url: http://tempo:3200
+  jsonData:
+    tracesToMetrics:
+      datasourceUid: mimir
+      spanStartTimeShift: '-5m'
+      spanEndTimeShift: '5m'
+      tags:
+      - {key: 'service.name', value: 'service'}
+      - {key: 'service.version', value: 'service_version'}
+      - {key: 'tier'}
+      - {key: 'environment'}
+      - {key: 'http.method', value: 'http_method'}
+      - {key: 'http.target', value: 'http_target'}
+      - {key: 'http.status_code', value: 'http_status_code'}
+      - {key: 'rpc.service', value: 'rpc_service'}
+      - {key: 'rpc.method', value: 'rpc_method'}
+      - {key: 'rpc.grpc.status_code', value: 'rpc_grpc_status_code'}
+      - {key: 'endpoint.service', value: 'endpoint_service'}
+      - {key: 'endpoint.method', value: endpointa_method'}
+      - {key: 'job.worker', value: 'job_worker'}
+      - {key: 'job.kind', value: 'job_kind'}
+      - {key: 'job.queue', value: 'job_queue'}
+      - {key: 'job.priority', value: 'job_priority'}
+      queries:
+      - name: 'Spanmetrics Latency'
+        query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[1m]))'
+    tracesToLogsV2:
+      datasourceUid: loki
+      spanStartTimeShift: '-5m'
+      spanEndTimeShift: '5m'
+      customQuery: true
+      query: '{service_name=`$${__span.tags["service.name"]}`} | json | trace_id = `$${__span.traceId}` | span_id = `$${__span.spanId}`'
+    nodeGraph:
+      enabled: true
+    serviceMap:
+      datasourceUid: mimir
+
+- name: Loki
+  type: loki
+  access: proxy
+  uid: loki
+  url: http://loki:3100
+  jsonData:
+    derivedFields:
+    - datasourceUid: tempo
+      matcherRegex: '"trace_id":"(\w+)"'
+      name: trace_id
+      url: '$${__value.raw}'
+      urlDisplayLabel: 'View Trace'
