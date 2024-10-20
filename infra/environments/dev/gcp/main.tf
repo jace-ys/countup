@@ -6,6 +6,6 @@ output "google_project" {
   value = data.google_project.this
 }
 
-output "ping" {
-  value = "pong"
+output "hello" {
+  value = "world"
 }
