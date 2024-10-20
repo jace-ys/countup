@@ -1,0 +1,9 @@
+- Missing spans?
+- Dev environment
+- Templ, Alpine.js, Tailwind, Air
+- Hot reload
+- Scoreboard
+- Use user ID instead of email?
+- Cleanup config
+- Use auto-instrumentation?
+- Fix Grafana dashboards
