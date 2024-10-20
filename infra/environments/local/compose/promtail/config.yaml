@@ -1,0 +1,151 @@
+---
+server:
+  http_listen_port: 3080
+  log_level: warn
+
+clients:
+- url: http://loki:3100/loki/api/v1/push
+
+positions:
+  filename: /tmp/positions.yaml
+
+scrape_configs:
+- job_name: countup
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=countup]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'
+  pipeline_stages:
+  - docker: {}
+  - json:
+      expressions:
+        level:
+  - labels:
+      level:
+
+- job_name: grafana
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=grafana]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'
+
+- job_name: otel-collector
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=otel-collector]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'
+
+- job_name: promtail
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=promtail]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'
+
+- job_name: loki
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=loki]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'
+
+- job_name: tempo
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=tempo]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'
+
+- job_name: mimir
+  docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+    filters:
+    - name: network
+      values: [countup_default]
+    - name: label
+      values: [service=mimir]
+  relabel_configs:
+  - source_labels: ['__meta_docker_container_name']
+    regex: '/(.*)'
+    target_label: 'container'
+  - source_labels: ['__meta_docker_container_log_stream']
+    target_label: 'logstream'
+  - source_labels: ['__meta_docker_container_label_service']
+    target_label: 'service_name'
+  - action: labelmap
+    regex: '__meta_docker_container_label_(component|tier|environment)'

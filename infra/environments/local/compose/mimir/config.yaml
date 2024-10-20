@@ -1,0 +1,43 @@
+---
+multitenancy_enabled: false
+
+server:
+  http_listen_port: 3300
+  log_level: warn
+  log_format: json
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/tsdb-data
+  bucket_store:
+    sync_dir: /tmp/mimir/tsdb-sync
+  tsdb:
+    dir: /tmp/mimir/tsdb
+
+distributor:
+  ring:
+    kvstore:
+      store: memberlist
+
+ingester:
+  ring:
+    replication_factor: 1
+    kvstore:
+      store: memberlist
+
+compactor:
+  data_dir: /tmp/mimir/data-compactor
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
+
+limits:
+  max_global_exemplars_per_user: 100000
+  native_histograms_ingestion_enabled: true
+  otel_keep_identifying_resource_attributes: true
+  promote_otel_resource_attributes: "service.name,service.version,deployment.environment.name"
