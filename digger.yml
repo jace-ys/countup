@@ -4,5 +4,5 @@ traverse_to_nested_projects: true
 
 projects:
 - name: dev
-  dir: infra/environments/dev
+  dir: infra/environments/dev/gcp
   workspace: dev
