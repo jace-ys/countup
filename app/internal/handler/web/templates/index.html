@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Count Up!</title>
+</head>
+
+<body>
+    <h1>Hello {{ .Data.Name }}</h1>
+    <form method="GET">
+        <button type="submit" formaction="/session/token">Token</button>
+    </form>
+    <br>
+    <form method="GET">
+        <button type="submit" formaction="/api/v1/counter">Counter</button>
+    </form>
+    <br>
+    <form method="POST">
+        <button type="submit" formaction="/api/v1/counter">Increment</button>
+    </form>
+    <br>
+    <button onclick="location.href='/another'" type="button">Another</button>
+    <br><br>
+    <button onclick="location.href='/static/quote.html'" type="button">Quote</button>
+    <br><br>
+    <button onclick="location.href='/static/assets/gopher.png'" type="button">Gopher</button>
+    <br><br>
+    <button onclick="location.href='/login/google'" type="button">Login</button>
+    <br><br>
+    <button onclick="location.href='/logout'" type="button">Logout</button>
+</body>
+
+</html>
