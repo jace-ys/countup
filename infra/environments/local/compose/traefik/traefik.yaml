@@ -1,0 +1,16 @@
+log:
+  level: INFO
+
+api:
+  insecure: true
+
+providers:
+  docker:
+    exposedByDefault: false
+
+  file:
+    filename: /etc/traefik/dynamic.yaml
+
+entryPoints:
+  localhttps:
+    address: :4043
