@@ -1,0 +1,33 @@
+---
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: warn
+  log_format: json
+
+common:
+  instance_addr: 127.0.0.1
+  replication_factor: 1
+  path_prefix: /tmp/loki
+  ring:
+    kvstore:
+      store: memberlist
+
+pattern_ingester:
+  enabled: true
+
+storage_config:
+  filesystem:
+    directory: /tmp/loki/chunks
+
+schema_config:
+  configs:
+  - from: 2024-08-28
+    store: tsdb
+    object_store: filesystem
+    schema: v13
+    index:
+      prefix: index_
+      period: 24h
+

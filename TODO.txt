@@ -1,0 +1,5 @@
+- Missing spans?
+- Dev environment
+- Templ, Alpine.js, Tailwind, Air
+- Hot reload
+- Scoreboard

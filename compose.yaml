@@ -1,0 +1,207 @@
+name: countup
+
+services:
+  countup:
+    image: jace-ys/countup:0.0.0
+    build:
+      context: ./app
+    profiles: [ apps ]
+    labels:
+      service: countup
+      tier: app
+      environment: local
+      traefik.enable: true
+      traefik.http.routers.countup.entrypoints: localhttps
+      traefik.http.routers.countup.rule: Host(`localhost`)
+      traefik.http.routers.countup.tls: true
+    ports:
+    - 8080:8080
+    - 8081:8081
+    - 9090:9090
+    command:
+    - server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      OTEL_GO_X_EXEMPLAR: true
+      OTEL_RESOURCE_ATTRIBUTES: tier=app,environment=local
+      OTLP_METRICS_ENDPOINT: otel-collector:4317
+      OTLP_TRACES_ENDPOINT: otel-collector:4317
+      DATABASE_CONNECTION_URI: postgresql://countup:countup@postgres:5432/countup
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+      OAUTH_REDIRECT_URL: https://localhost:4043/login/google/callback
+
+  traefik:
+    image: traefik:v3.2.1
+    labels:
+      service: traefik
+      tier: ingress
+      environment: local
+    ports:
+    - 4043:4043
+    - 4040:8080
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./infra/environments/local/compose/traefik:/etc/traefik
+
+  postgres:
+    image: postgres:15.8-alpine
+    labels:
+      service: postgres
+      component: primary
+      tier: database
+      environment: local
+    ports:
+    - 5432:5432
+    environment:
+      POSTGRES_USER: countup
+      POSTGRES_PASSWORD: countup
+      POSTGRES_DB: countup
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
+
+  postgres-init:
+    image: jace-ys/countup:0.0.0
+    build:
+      context: ./app
+    labels:
+      service: postgres
+      component: init
+      tier: database
+      environment: local
+    command:
+    - migrate
+    - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_CONNECTION_URI: postgresql://countup:countup@postgres:5432/countup
+      MIGRATIONS_DIR: /app/migrations
+      MIGRATIONS_LOCALFS: true
+    volumes:
+    - ./app/schema/migrations:/app/migrations
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    labels:
+      service: postgres
+      component: exporter
+      tier: database
+      environment: local
+    ports:
+    - 9187:9187
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_URI: postgres:5432/countup?sslmode=disable
+      DATA_SOURCE_USER: countup
+      DATA_SOURCE_PASS: countup
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    labels:
+      service: grafana
+      tier: observability
+      environment: local
+    ports:
+    - 3000:3000
+    command:
+    - --config=/etc/grafana/config.ini
+    volumes:
+    - ./infra/environments/local/compose/grafana/config.ini:/etc/grafana/config.ini
+    - ./infra/environments/local/compose/grafana/provisioning:/etc/grafana/provisioning
+    - ./infra/environments/local/compose/grafana/definitions:/var/lib/grafana/dashboards
+    environment:
+    - GF_INSTALL_PLUGINS=https://storage.googleapis.com/integration-artifacts/grafana-lokiexplore-app/grafana-lokiexplore-app-latest.zip;grafana-lokiexplore-app
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.107.0
+    labels:
+      service: otel-collector
+      tier: observability
+      environment: local
+    user: '0'
+    ports:
+    - 4317:4317
+    - 8888:8888
+    command:
+    - --config=/etc/otel-collector/config.yaml
+    depends_on:
+      mimir:
+        condition: service_started
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./infra/environments/local/compose/otel-collector/config.yaml:/etc/otel-collector/config.yaml
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    labels:
+      service: promtail
+      tier: observability
+      environment: local
+    ports:
+    - 3080:3080
+    command:
+    - -config.file=/etc/promtail/config.yaml
+    depends_on:
+      loki:
+        condition: service_started
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./infra/environments/local/compose/promtail/config.yaml:/etc/promtail/config.yaml
+
+  loki:
+    image: grafana/loki:3.1.1
+    labels:
+      service: loki
+      tier: observability
+      environment: local
+    command:
+    - -config.file=/etc/loki/config.yaml
+    ports:
+    - 3100:3100
+    volumes:
+    - ./infra/environments/local/compose/loki/config.yaml:/etc/loki/config.yaml
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    labels:
+      service: tempo
+      tier: observability
+      environment: local
+    ports:
+    - 3200:3200
+    command:
+    - -config.file=/etc/tempo/config.yaml
+    volumes:
+    - ./infra/environments/local/compose/tempo/config.yaml:/etc/tempo/config.yaml
+
+  mimir:
+    image: grafana/mimir:2.13.0
+    labels:
+      service: mimir
+      tier: observability
+      environment: local
+    command:
+    - -ingester.native-histograms-ingestion-enabled=true
+    - -config.file=/etc/mimir/config.yaml
+    ports:
+    - 3300:3300
+    volumes:
+    - ./infra/environments/local/compose/mimir/config.yaml:/etc/mimir/config.yaml

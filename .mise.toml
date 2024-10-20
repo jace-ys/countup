@@ -1,0 +1,13 @@
+[tools]
+atlas = "0.31.0"
+go = "1.23.4"
+golangci-lint = "1.64.5"
+mkcert = "1.4.4"
+opentofu = "1.9.0"
+protoc = "29.1"
+protoc-gen-go = "1.36.5"
+protoc-gen-go-grpc = "1.5.1"
+task = "3.41.0"
+
+"go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "1.28.0"
+"go:goa.design/goa/v3/cmd/goa" = "3.19.1"
