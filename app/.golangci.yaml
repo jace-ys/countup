@@ -1,0 +1,139 @@
+---
+linters-settings:
+  cyclop:
+    package-average: 10.0
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+    - (github.com/jackc/pgx/v5.Tx).Rollback
+
+  exhaustive:
+    check:
+    - switch
+    - map
+
+  funlen:
+    lines: 100
+    statements: 60
+    ignore-comments: true
+
+  gci:
+    sections:
+    - standard
+    - default
+    - localmodule
+
+  gocognit:
+    min-complexity: 20
+
+  gocritic:
+    disabled-checks:
+    - singleCaseSwitch
+
+  govet:
+    enable-all: true
+    disable:
+    - fieldalignment
+    - shadow
+
+  nakedret:
+    max-func-lines: 0
+
+  perfsprint:
+    strconcat: false
+
+  wrapcheck:
+    ignoreSigs:
+    - .Errorf(
+    - errors.New(
+    - errors.Unwrap(
+    - errors.Join(
+    - .Wrap(
+    - .Wrapf(
+    - .WithMessage(
+    - .WithMessagef(
+    - .WithStack(
+    - (context.Context).Err()
+    - (*github.com/jace-ys/countup/internal/postgres.Pool).WithinTx
+
+linters:
+  disable-all: true
+  enable:
+  - errcheck
+  - gosimple
+  - govet
+  - ineffassign
+  - staticcheck
+  - unused
+
+  - asasalint
+  - asciicheck
+  - bidichk
+  - bodyclose
+  - canonicalheader
+  - copyloopvar
+  - cyclop
+  - decorder
+  - durationcheck
+  - errname
+  - errorlint
+  - exhaustive
+  - fatcontext
+  - funlen
+  - gci
+  - ginkgolinter
+  - gocheckcompilerdirectives
+  - gochecksumtype
+  - gocognit
+  - goconst
+  - gocritic
+  - gocyclo
+  - godot
+  - godox
+  - goimports
+  - gomoddirectives
+  - gomodguard
+  - goprintffuncname
+  - gosec
+  - intrange
+  - loggercheck
+  - makezero
+  - mirror
+  - musttag
+  - nakedret
+  - nestif
+  - nilerr
+  - nilnil
+  - noctx
+  - nolintlint
+  - nosprintfhostport
+  - perfsprint
+  - prealloc
+  - predeclared
+  - promlinter
+  - protogetter
+  - reassign
+  - spancheck
+  - sqlclosecheck
+  - tenv
+  - testableexamples
+  - testifylint
+  - testpackage
+  - tparallel
+  - unconvert
+  - usestdlibvars
+  - wastedassign
+  - whitespace
+  - wrapcheck
+
+issues:
+  exclude-use-default: true
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-dirs:
+  - ^api/v[0-9]+/gen$
+  - ^cmd/countup-cli$
+  - ^internal/handler/teapot$
