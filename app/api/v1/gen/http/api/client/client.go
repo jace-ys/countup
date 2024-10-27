@@ -17,6 +17,10 @@ import (
 
 // Client lists the api service endpoint HTTP clients.
 type Client struct {
+	// AuthToken Doer is the HTTP client used to make requests to the AuthToken
+	// endpoint.
+	AuthTokenDoer goahttp.Doer
+
 	// CounterGet Doer is the HTTP client used to make requests to the CounterGet
 	// endpoint.
 	CounterGetDoer goahttp.Doer
@@ -24,9 +28,6 @@ type Client struct {
 	// CounterIncrement Doer is the HTTP client used to make requests to the
 	// CounterIncrement endpoint.
 	CounterIncrementDoer goahttp.Doer
-
-	// Echo Doer is the HTTP client used to make requests to the Echo endpoint.
-	EchoDoer goahttp.Doer
 
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
@@ -48,9 +49,9 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
+		AuthTokenDoer:        doer,
 		CounterGetDoer:       doer,
 		CounterIncrementDoer: doer,
-		EchoDoer:             doer,
 		RestoreResponseBody:  restoreBody,
 		scheme:               scheme,
 		host:                 host,
@@ -59,14 +60,43 @@ func NewClient(
 	}
 }
 
+// AuthToken returns an endpoint that makes HTTP requests to the api service
+// AuthToken server.
+func (c *Client) AuthToken() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeAuthTokenRequest(c.encoder)
+		decodeResponse = DecodeAuthTokenResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildAuthTokenRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.AuthTokenDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("api", "AuthToken", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
 // CounterGet returns an endpoint that makes HTTP requests to the api service
 // CounterGet server.
 func (c *Client) CounterGet() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeCounterGetRequest(c.encoder)
 		decodeResponse = DecodeCounterGetResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildCounterGetRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}
@@ -97,30 +127,6 @@ func (c *Client) CounterIncrement() goa.Endpoint {
 		resp, err := c.CounterIncrementDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("api", "CounterIncrement", err)
-		}
-		return decodeResponse(resp)
-	}
-}
-
-// Echo returns an endpoint that makes HTTP requests to the api service Echo
-// server.
-func (c *Client) Echo() goa.Endpoint {
-	var (
-		encodeRequest  = EncodeEchoRequest(c.encoder)
-		decodeResponse = DecodeEchoResponse(c.decoder, c.RestoreResponseBody)
-	)
-	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildEchoRequest(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		err = encodeRequest(req, v)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := c.EchoDoer.Do(req)
-		if err != nil {
-			return nil, goahttp.ErrRequestError("api", "Echo", err)
 		}
 		return decodeResponse(resp)
 	}

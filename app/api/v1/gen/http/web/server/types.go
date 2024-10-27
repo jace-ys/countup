@@ -6,3 +6,243 @@
 // $ goa gen github.com/jace-ys/countup/api/v1 -o api/v1
 
 package server
+
+import (
+	web "github.com/jace-ys/countup/api/v1/gen/web"
+	goa "goa.design/goa/v3/pkg"
+)
+
+// SessionTokenResponseBody is the type of the "web" service "SessionToken"
+// endpoint HTTP response body.
+type SessionTokenResponseBody struct {
+	Token string `form:"token" json:"token" xml:"token"`
+}
+
+// IndexUnauthorizedResponseBody is the type of the "web" service "Index"
+// endpoint HTTP response body for the "unauthorized" error.
+type IndexUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// AnotherUnauthorizedResponseBody is the type of the "web" service "Another"
+// endpoint HTTP response body for the "unauthorized" error.
+type AnotherUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// LoginGoogleUnauthorizedResponseBody is the type of the "web" service
+// "LoginGoogle" endpoint HTTP response body for the "unauthorized" error.
+type LoginGoogleUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// LoginGoogleCallbackUnauthorizedResponseBody is the type of the "web" service
+// "LoginGoogleCallback" endpoint HTTP response body for the "unauthorized"
+// error.
+type LoginGoogleCallbackUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// LogoutUnauthorizedResponseBody is the type of the "web" service "Logout"
+// endpoint HTTP response body for the "unauthorized" error.
+type LogoutUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// SessionTokenUnauthorizedResponseBody is the type of the "web" service
+// "SessionToken" endpoint HTTP response body for the "unauthorized" error.
+type SessionTokenUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// NewSessionTokenResponseBody builds the HTTP response body from the result of
+// the "SessionToken" endpoint of the "web" service.
+func NewSessionTokenResponseBody(res *web.SessionTokenResult) *SessionTokenResponseBody {
+	body := &SessionTokenResponseBody{
+		Token: res.Token,
+	}
+	return body
+}
+
+// NewIndexUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "Index" endpoint of the "web" service.
+func NewIndexUnauthorizedResponseBody(res *goa.ServiceError) *IndexUnauthorizedResponseBody {
+	body := &IndexUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewAnotherUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "Another" endpoint of the "web" service.
+func NewAnotherUnauthorizedResponseBody(res *goa.ServiceError) *AnotherUnauthorizedResponseBody {
+	body := &AnotherUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewLoginGoogleUnauthorizedResponseBody builds the HTTP response body from
+// the result of the "LoginGoogle" endpoint of the "web" service.
+func NewLoginGoogleUnauthorizedResponseBody(res *goa.ServiceError) *LoginGoogleUnauthorizedResponseBody {
+	body := &LoginGoogleUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewLoginGoogleCallbackUnauthorizedResponseBody builds the HTTP response body
+// from the result of the "LoginGoogleCallback" endpoint of the "web" service.
+func NewLoginGoogleCallbackUnauthorizedResponseBody(res *goa.ServiceError) *LoginGoogleCallbackUnauthorizedResponseBody {
+	body := &LoginGoogleCallbackUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewLogoutUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "Logout" endpoint of the "web" service.
+func NewLogoutUnauthorizedResponseBody(res *goa.ServiceError) *LogoutUnauthorizedResponseBody {
+	body := &LogoutUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewSessionTokenUnauthorizedResponseBody builds the HTTP response body from
+// the result of the "SessionToken" endpoint of the "web" service.
+func NewSessionTokenUnauthorizedResponseBody(res *goa.ServiceError) *SessionTokenUnauthorizedResponseBody {
+	body := &SessionTokenUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewLoginGoogleCallbackPayload builds a web service LoginGoogleCallback
+// endpoint payload.
+func NewLoginGoogleCallbackPayload(code string, state string, sessionCookie string) *web.LoginGoogleCallbackPayload {
+	v := &web.LoginGoogleCallbackPayload{}
+	v.Code = code
+	v.State = state
+	v.SessionCookie = sessionCookie
+
+	return v
+}
+
+// NewLogoutPayload builds a web service Logout endpoint payload.
+func NewLogoutPayload(sessionCookie string) *web.LogoutPayload {
+	v := &web.LogoutPayload{}
+	v.SessionCookie = sessionCookie
+
+	return v
+}
+
+// NewSessionTokenPayload builds a web service SessionToken endpoint payload.
+func NewSessionTokenPayload(sessionCookie string) *web.SessionTokenPayload {
+	v := &web.SessionTokenPayload{}
+	v.SessionCookie = sessionCookie
+
+	return v
+}

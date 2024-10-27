@@ -115,6 +115,14 @@ tasks:
     cmds:
     - docker build --build-arg LDFLAGS='{{ .LDFLAGS | join " " }}' -t jace-ys/countup:{{ .VERSION }} .
 
+  certs:local:*:
+    dir: infra/environments/local/compose
+    vars:
+      APP: '{{ index .MATCH 0 }}'
+    cmds:
+    - mkcert -install
+    - mkcert -cert-file {{ .APP }}/certs/cert.pem -key-file {{ .APP }}/certs/key.pem localhost 127.0.0.1 ::1
+
   compose:
     ignore_error: true
     deps: ['gen']

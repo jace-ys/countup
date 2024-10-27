@@ -10,10 +10,14 @@
 <body>
     <h1>Hello {{ .Data.Name }}</h1>
     <form method="GET">
-        <button type="submit" formaction="{{ .Vars.BaseAPIEndpoint }}/inc">Increment</button>
+        <button type="submit" formaction="/session/token">Increment</button>
     </form>
     <br><br>
     <button onclick="location.href='/another'" type="button">Another</button>
+    <br><br>
+    <button onclick="location.href='/login/google'" type="button">Login</button>
+    <br><br>
+    <button onclick="location.href='/logout'" type="button">Logout</button>
 </body>
 
 </html>

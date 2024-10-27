@@ -119,9 +119,7 @@ issues:
   max-same-issues: 50
 
   exclude-dirs:
-  - ^api$
+  - ^api/v[0-9]+/gen$
   - ^cmd/countup-cli$
+  - ^internal/handler/teapot$
   - ^schema/migrations$
-
-  exclude-files:
-  - ^internal/handler/api/echo.go$

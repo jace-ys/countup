@@ -26,9 +26,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	API_AuthToken_FullMethodName        = "/api.API/AuthToken"
 	API_CounterGet_FullMethodName       = "/api.API/CounterGet"
 	API_CounterIncrement_FullMethodName = "/api.API/CounterIncrement"
-	API_Echo_FullMethodName             = "/api.API/Echo"
 )
 
 // APIClient is the client API for API service.
@@ -37,12 +37,12 @@ const (
 //
 // Service is the api service interface.
 type APIClient interface {
+	// AuthToken implements AuthToken.
+	AuthToken(ctx context.Context, in *AuthTokenRequest, opts ...grpc.CallOption) (*AuthTokenResponse, error)
 	// CounterGet implements CounterGet.
 	CounterGet(ctx context.Context, in *CounterGetRequest, opts ...grpc.CallOption) (*CounterGetResponse, error)
 	// CounterIncrement implements CounterIncrement.
 	CounterIncrement(ctx context.Context, in *CounterIncrementRequest, opts ...grpc.CallOption) (*CounterIncrementResponse, error)
-	// Echo implements Echo.
-	Echo(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoResponse, error)
 }
 
 type aPIClient struct {
@@ -51,6 +51,16 @@ type aPIClient struct {
 
 func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 	return &aPIClient{cc}
+}
+
+func (c *aPIClient) AuthToken(ctx context.Context, in *AuthTokenRequest, opts ...grpc.CallOption) (*AuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthTokenResponse)
+	err := c.cc.Invoke(ctx, API_AuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *aPIClient) CounterGet(ctx context.Context, in *CounterGetRequest, opts ...grpc.CallOption) (*CounterGetResponse, error) {
@@ -73,28 +83,18 @@ func (c *aPIClient) CounterIncrement(ctx context.Context, in *CounterIncrementRe
 	return out, nil
 }
 
-func (c *aPIClient) Echo(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EchoResponse)
-	err := c.cc.Invoke(ctx, API_Echo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // APIServer is the server API for API service.
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility.
 //
 // Service is the api service interface.
 type APIServer interface {
+	// AuthToken implements AuthToken.
+	AuthToken(context.Context, *AuthTokenRequest) (*AuthTokenResponse, error)
 	// CounterGet implements CounterGet.
 	CounterGet(context.Context, *CounterGetRequest) (*CounterGetResponse, error)
 	// CounterIncrement implements CounterIncrement.
 	CounterIncrement(context.Context, *CounterIncrementRequest) (*CounterIncrementResponse, error)
-	// Echo implements Echo.
-	Echo(context.Context, *EchoRequest) (*EchoResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -105,14 +105,14 @@ type APIServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAPIServer struct{}
 
+func (UnimplementedAPIServer) AuthToken(context.Context, *AuthTokenRequest) (*AuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthToken not implemented")
+}
 func (UnimplementedAPIServer) CounterGet(context.Context, *CounterGetRequest) (*CounterGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CounterGet not implemented")
 }
 func (UnimplementedAPIServer) CounterIncrement(context.Context, *CounterIncrementRequest) (*CounterIncrementResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CounterIncrement not implemented")
-}
-func (UnimplementedAPIServer) Echo(context.Context, *EchoRequest) (*EchoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 func (UnimplementedAPIServer) testEmbeddedByValue()             {}
@@ -133,6 +133,24 @@ func RegisterAPIServer(s grpc.ServiceRegistrar, srv APIServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&API_ServiceDesc, srv)
+}
+
+func _API_AuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).AuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: API_AuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).AuthToken(ctx, req.(*AuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _API_CounterGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -171,24 +189,6 @@ func _API_CounterIncrement_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _API_Echo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EchoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(APIServer).Echo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: API_Echo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).Echo(ctx, req.(*EchoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // API_ServiceDesc is the grpc.ServiceDesc for API service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -197,16 +197,16 @@ var API_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*APIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "AuthToken",
+			Handler:    _API_AuthToken_Handler,
+		},
+		{
 			MethodName: "CounterGet",
 			Handler:    _API_CounterGet_Handler,
 		},
 		{
 			MethodName: "CounterIncrement",
 			Handler:    _API_CounterIncrement_Handler,
-		},
-		{
-			MethodName: "Echo",
-			Handler:    _API_Echo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

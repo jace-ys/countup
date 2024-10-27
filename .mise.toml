@@ -1,5 +1,6 @@
 [tools]
 atlas = "0.28.0"
+mkcert = "1.4.4"
 golang = "1.23.2"
 golangci-lint = "1.61.0"
 protoc = "28.2"

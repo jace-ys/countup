@@ -27,7 +27,6 @@ type Pool struct {
 	name    string
 	pool    *river.Client[pgx.Tx]
 	workers *river.Workers
-
 	metrics *metrics
 }
 

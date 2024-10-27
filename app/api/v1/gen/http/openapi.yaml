@@ -17,8 +17,8 @@ paths:
         get:
             tags:
                 - web
-            summary: index web
-            operationId: web#index
+            summary: Index web
+            operationId: web#Index
             produces:
                 - text/html
             responses:
@@ -27,14 +27,18 @@ paths:
                     schema:
                         type: string
                         format: byte
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/WebIndexUnauthorizedResponseBody'
             schemes:
                 - http
     /another:
         get:
             tags:
                 - web
-            summary: another web
-            operationId: web#another
+            summary: Another web
+            operationId: web#Another
             produces:
                 - text/html
             responses:
@@ -43,14 +47,58 @@ paths:
                     schema:
                         type: string
                         format: byte
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/WebAnotherUnauthorizedResponseBody'
             schemes:
                 - http
-    /counter:
+    /api/v1/auth/token:
+        post:
+            tags:
+                - api
+            summary: AuthToken api
+            operationId: api#AuthToken
+            parameters:
+                - name: AuthTokenRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/APIAuthTokenRequestBody'
+                    required:
+                        - provider
+                        - access_token
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/APIAuthTokenResponseBody'
+                        required:
+                            - token
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/APIAuthTokenUnauthorizedResponseBody'
+                "429":
+                    description: Too Many Requests response.
+                    schema:
+                        $ref: '#/definitions/APIAuthTokenExistingIncrementRequestResponseBody'
+            schemes:
+                - http
+    /api/v1/counter:
         get:
             tags:
                 - api
             summary: CounterGet api
+            description: |4-
+                **Required security scopes for jwt**:
+                  * `api`
             operationId: api#CounterGet
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
             responses:
                 "200":
                     description: OK response.
@@ -66,13 +114,21 @@ paths:
                         $ref: '#/definitions/APICounterGetExistingIncrementRequestResponseBody'
             schemes:
                 - http
-    /counter/inc:
+            security:
+                - jwt_header_Authorization: []
         post:
             tags:
                 - api
             summary: CounterIncrement api
+            description: |4-
+                **Required security scopes for jwt**:
+                  * `api`
             operationId: api#CounterIncrement
             parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
                 - name: CounterIncrementRequestBody
                   in: body
                   required: true
@@ -95,43 +151,113 @@ paths:
                         $ref: '#/definitions/APICounterIncrementExistingIncrementRequestResponseBody'
             schemes:
                 - http
+            security:
+                - jwt_header_Authorization: []
+    /api/v1/openapi.json:
+        get:
+            tags:
+                - api
+            summary: Download gen/http/openapi3.json
+            operationId: api#/api/v1/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+                    schema:
+                        type: file
+            schemes:
+                - http
     /echo:
         post:
             tags:
-                - api
-            summary: Echo api
-            operationId: api#Echo
+                - teapot
+            summary: Echo teapot
+            operationId: teapot#Echo
             parameters:
                 - name: EchoRequestBody
                   in: body
                   required: true
                   schema:
-                    $ref: '#/definitions/APIEchoRequestBody'
+                    $ref: '#/definitions/TeapotEchoRequestBody'
                     required:
                         - text
             responses:
                 "200":
                     description: OK response.
                     schema:
-                        $ref: '#/definitions/APIEchoResponseBody'
+                        $ref: '#/definitions/TeapotEchoResponseBody'
                         required:
                             - text
+            schemes:
+                - http
+    /login/google:
+        get:
+            tags:
+                - web
+            summary: LoginGoogle web
+            operationId: web#LoginGoogle
+            responses:
+                "302":
+                    description: Found response.
+                    headers:
+                        Location:
+                            type: string
                 "401":
                     description: Unauthorized response.
                     schema:
-                        $ref: '#/definitions/APIEchoUnauthorizedResponseBody'
-                "429":
-                    description: Too Many Requests response.
+                        $ref: '#/definitions/WebLoginGoogleUnauthorizedResponseBody'
+            schemes:
+                - http
+    /login/google/callback:
+        get:
+            tags:
+                - web
+            summary: LoginGoogleCallback web
+            operationId: web#LoginGoogleCallback
+            parameters:
+                - name: code
+                  in: query
+                  required: true
+                  type: string
+                - name: state
+                  in: query
+                  required: true
+                  type: string
+            responses:
+                "302":
+                    description: Found response.
+                    headers:
+                        Location:
+                            type: string
+                "401":
+                    description: Unauthorized response.
                     schema:
-                        $ref: '#/definitions/APIEchoExistingIncrementRequestResponseBody'
+                        $ref: '#/definitions/WebLoginGoogleCallbackUnauthorizedResponseBody'
+            schemes:
+                - http
+    /logout:
+        get:
+            tags:
+                - web
+            summary: Logout web
+            operationId: web#Logout
+            responses:
+                "302":
+                    description: Found response.
+                    headers:
+                        Location:
+                            type: string
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/WebLogoutUnauthorizedResponseBody'
             schemes:
                 - http
     /openapi.json:
         get:
             tags:
-                - api
+                - teapot
             summary: Download gen/http/openapi3.json
-            operationId: api#/openapi.json
+            operationId: teapot#/openapi.json
             responses:
                 "200":
                     description: File downloaded
@@ -139,30 +265,156 @@ paths:
                         type: file
             schemes:
                 - http
-    /static/{path}:
+    /session/token:
+        get:
+            tags:
+                - web
+            summary: SessionToken web
+            operationId: web#SessionToken
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/WebSessionTokenResponseBody'
+                        required:
+                            - token
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/WebSessionTokenUnauthorizedResponseBody'
+            schemes:
+                - http
+    /static/*:
         get:
             tags:
                 - web
             summary: Download static/
-            operationId: web#/static/{*path}
-            parameters:
-                - name: path
-                  in: path
-                  description: Relative file path
-                  required: true
-                  type: string
+            operationId: web#/static/*
             responses:
                 "200":
                     description: File downloaded
                     schema:
                         type: file
-                "404":
-                    description: File not found
-                    schema:
-                        $ref: '#/definitions/Error'
             schemes:
                 - http
 definitions:
+    APIAuthTokenExistingIncrementRequestResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: AuthToken_existing_increment_request_Response_Body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    APIAuthTokenRequestBody:
+        title: APIAuthTokenRequestBody
+        type: object
+        properties:
+            access_token:
+                type: string
+                example: Aut culpa quo sit dolor aperiam consequatur.
+            provider:
+                type: string
+                example: google
+                enum:
+                    - google
+        example:
+            access_token: Harum iusto quas.
+            provider: google
+        required:
+            - provider
+            - access_token
+    APIAuthTokenResponseBody:
+        title: APIAuthTokenResponseBody
+        type: object
+        properties:
+            token:
+                type: string
+                example: Illo vel qui ipsa adipisci.
+        example:
+            token: Quam eaque ipsa eius quaerat.
+        required:
+            - token
+    APIAuthTokenUnauthorizedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: AuthToken_unauthorized_Response_Body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
     APICounterGetExistingIncrementRequestResponseBody:
         title: 'Mediatype identifier: application/vnd.goa.error; view=default'
         type: object
@@ -186,19 +438,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: true
         description: CounterGet_existing_increment_request_Response_Body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
             temporary: false
-            timeout: false
+            timeout: true
         required:
             - name
             - id
@@ -229,19 +481,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: true
         description: CounterGet_unauthorized_Response_Body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -298,9 +550,9 @@ definitions:
         properties:
             user:
                 type: string
-                example: Non perspiciatis eum dicta sit.
+                example: Voluptas quae perspiciatis illo suscipit.
         example:
-            user: Odio tenetur temporibus.
+            user: Nesciunt vero repudiandae.
         required:
             - user
     APICounterIncrementUnauthorizedResponseBody:
@@ -310,7 +562,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -333,54 +585,11 @@ definitions:
                 example: true
         description: CounterIncrement_unauthorized_Response_Body result type (default view)
         example:
-            fault: false
-            id: 123abc
-            message: parameter 'p' must be an integer
-            name: bad_request
-            temporary: false
-            timeout: false
-        required:
-            - name
-            - id
-            - message
-            - temporary
-            - timeout
-            - fault
-    APIEchoExistingIncrementRequestResponseBody:
-        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
-        type: object
-        properties:
-            fault:
-                type: boolean
-                description: Is the error a server-side fault?
-                example: false
-            id:
-                type: string
-                description: ID is a unique identifier for this particular occurrence of the problem.
-                example: 123abc
-            message:
-                type: string
-                description: Message is a human-readable explanation specific to this occurrence of the problem.
-                example: parameter 'p' must be an integer
-            name:
-                type: string
-                description: Name is the name of this class of errors.
-                example: bad_request
-            temporary:
-                type: boolean
-                description: Is the error temporary?
-                example: true
-            timeout:
-                type: boolean
-                description: Is the error a timeout?
-                example: false
-        description: Echo_existing_increment_request_Response_Body result type (default view)
-        example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -389,36 +598,64 @@ definitions:
             - temporary
             - timeout
             - fault
-    APIEchoRequestBody:
-        title: APIEchoRequestBody
+    CounterInfo:
+        title: 'Mediatype identifier: application/vnd.countup.counter-info`; view=default'
+        type: object
+        properties:
+            count:
+                type: integer
+                example: 718974130
+                format: int32
+            last_increment_at:
+                type: string
+                example: Consequuntur cupiditate pariatur aut placeat.
+            last_increment_by:
+                type: string
+                example: Ipsam nesciunt minima cupiditate.
+            next_finalize_at:
+                type: string
+                example: Amet voluptas ex nostrum aperiam explicabo sed.
+        description: CounterGetResponseBody result type (default view)
+        example:
+            count: 837784502
+            last_increment_at: Eius rerum.
+            last_increment_by: Sint asperiores sed voluptas voluptatem.
+            next_finalize_at: Accusamus maiores ut voluptas.
+        required:
+            - count
+            - last_increment_by
+            - last_increment_at
+            - next_finalize_at
+    TeapotEchoRequestBody:
+        title: TeapotEchoRequestBody
         type: object
         properties:
             text:
                 type: string
-                example: Deleniti necessitatibus numquam perspiciatis quia ipsa quam.
+                example: Adipisci saepe et vel magnam dolor.
         example:
-            text: Nemo dolorem ullam magnam.
+            text: At officia repudiandae ex ipsam labore.
         required:
             - text
-    APIEchoResponseBody:
-        title: APIEchoResponseBody
+    TeapotEchoResponseBody:
+        title: TeapotEchoResponseBody
         type: object
         properties:
             text:
                 type: string
-                example: Praesentium qui debitis.
+                example: Id accusamus quam aut.
         example:
-            text: Odit cum blanditiis ut.
+            text: Voluptatem ipsam et dolorem quos nihil assumenda.
         required:
             - text
-    APIEchoUnauthorizedResponseBody:
+    WebAnotherUnauthorizedResponseBody:
         title: 'Mediatype identifier: application/vnd.goa.error; view=default'
         type: object
         properties:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -438,8 +675,8 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
-        description: Echo_unauthorized_Response_Body result type (default view)
+                example: true
+        description: Another_unauthorized_Response_Body result type (default view)
         example:
             fault: false
             id: 123abc
@@ -454,35 +691,93 @@ definitions:
             - temporary
             - timeout
             - fault
-    CounterInfo:
-        title: 'Mediatype identifier: application/vnd.countup.counter-info`; view=default'
+    WebIndexUnauthorizedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
         type: object
         properties:
-            count:
-                type: integer
-                example: 1315490442
-                format: int32
-            last_increment_at:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
                 type: string
-                example: Eligendi quisquam.
-            last_increment_by:
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
                 type: string
-                example: Vero molestiae.
-            next_finalize_at:
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
                 type: string
-                example: Aut in dolor eum consequatur.
-        description: CounterGetResponseBody result type (default view)
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: Index_unauthorized_Response_Body result type (default view)
         example:
-            count: 1162746042
-            last_increment_at: Tempore asperiores.
-            last_increment_by: Tempora repellendus.
-            next_finalize_at: Quae voluptatibus dolor fugit quia.
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: false
         required:
-            - count
-            - last_increment_by
-            - last_increment_at
-            - next_finalize_at
-    Error:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    WebLoginGoogleCallbackUnauthorizedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: false
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: LoginGoogleCallback_unauthorized_Response_Body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    WebLoginGoogleUnauthorizedResponseBody:
         title: 'Mediatype identifier: application/vnd.goa.error; view=default'
         type: object
         properties:
@@ -510,7 +805,50 @@ definitions:
                 type: boolean
                 description: Is the error a timeout?
                 example: false
-        description: Error response result type (default view)
+        description: LoginGoogle_unauthorized_Response_Body result type (default view)
+        example:
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    WebLogoutUnauthorizedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: false
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: Logout_unauthorized_Response_Body result type (default view)
         example:
             fault: true
             id: 123abc
@@ -525,3 +863,65 @@ definitions:
             - temporary
             - timeout
             - fault
+    WebSessionTokenResponseBody:
+        title: WebSessionTokenResponseBody
+        type: object
+        properties:
+            token:
+                type: string
+                example: Qui quaerat nobis incidunt porro quam quam.
+        example:
+            token: Nobis reiciendis voluptate totam ex eos.
+        required:
+            - token
+    WebSessionTokenUnauthorizedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: SessionToken_unauthorized_Response_Body result type (default view)
+        example:
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+securityDefinitions:
+    jwt_header_Authorization:
+        type: apiKey
+        description: |4-
+            **Security Scopes**:
+              * `api`: no description
+        name: Authorization
+        in: header

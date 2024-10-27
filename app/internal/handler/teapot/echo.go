@@ -1,4 +1,4 @@
-package api
+package teapot
 
 import (
 	"context"
@@ -8,15 +8,15 @@ import (
 
 	"github.com/riverqueue/river"
 
-	"github.com/jace-ys/countup/api/v1/gen/api"
+	"github.com/jace-ys/countup/api/v1/gen/teapot"
 )
 
-func (h *Handler) Echo(ctx context.Context, req *api.EchoPayload) (*api.EchoResult, error) {
+func (h *Handler) Echo(ctx context.Context, req *teapot.EchoPayload) (*teapot.EchoResult, error) {
 	switch {
 	case strings.HasPrefix(req.Text, "error: "):
 		msg := strings.TrimPrefix(req.Text, "error: ")
 		h.workers.Enqueue(ctx, &EchoJobArgs{Error: msg})
-		return nil, api.MakeUnauthorized(errors.New(msg))
+		return nil, teapot.MakeUnwell(errors.New(msg))
 
 	case strings.HasPrefix(req.Text, "panic: "):
 		msg := strings.TrimPrefix(req.Text, "panic: ")
@@ -26,7 +26,7 @@ func (h *Handler) Echo(ctx context.Context, req *api.EchoPayload) (*api.EchoResu
 	case strings.HasPrefix(req.Text, "cancel: "):
 		msg := strings.TrimPrefix(req.Text, "cancel: ")
 		h.workers.Enqueue(ctx, &EchoJobArgs{Cancel: msg})
-		return nil, api.MakeUnauthorized(errors.New(msg))
+		return nil, teapot.MakeUnwell(errors.New(msg))
 
 	case strings.HasPrefix(req.Text, "sleep: "):
 		msg := strings.TrimPrefix(req.Text, "sleep: ")
@@ -38,7 +38,7 @@ func (h *Handler) Echo(ctx context.Context, req *api.EchoPayload) (*api.EchoResu
 		h.workers.Enqueue(ctx, &EchoJobArgs{Sleep: duration})
 	}
 
-	return &api.EchoResult{Text: req.Text}, nil
+	return &teapot.EchoResult{Text: req.Text}, nil
 }
 
 type EchoJobArgs struct {

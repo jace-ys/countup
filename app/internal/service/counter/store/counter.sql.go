@@ -11,6 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteIncrementRequests = `-- name: DeleteIncrementRequests :exec
+TRUNCATE TABLE increment_requests
+`
+
+func (q *Queries) DeleteIncrementRequests(ctx context.Context, db DBTX) error {
+	_, err := db.Exec(ctx, deleteIncrementRequests)
+	return err
+}
+
 const getCounter = `-- name: GetCounter :one
 SELECT id, count, last_increment_by, last_increment_at, next_finalize_at
 FROM counter
@@ -50,16 +59,9 @@ func (q *Queries) IncrementCounter(ctx context.Context, db DBTX, arg IncrementCo
 	return err
 }
 
-const insertIncrementRequest = `-- name: InsertIncrementRequest :one
-WITH inserted AS (
-  INSERT INTO increment_requests (requested_by, requested_at)
-  VALUES ($1, $2)
-), existing AS (
-  SELECT COUNT(*) AS requests FROM increment_requests
-)
-SELECT
-  existing.requests AS existing_requests
-FROM existing
+const insertIncrementRequest = `-- name: InsertIncrementRequest :exec
+INSERT INTO increment_requests (requested_by, requested_at)
+VALUES ($1, $2)
 `
 
 type InsertIncrementRequestParams struct {
@@ -67,11 +69,9 @@ type InsertIncrementRequestParams struct {
 	RequestedAt pgtype.Timestamptz
 }
 
-func (q *Queries) InsertIncrementRequest(ctx context.Context, db DBTX, arg InsertIncrementRequestParams) (int64, error) {
-	row := db.QueryRow(ctx, insertIncrementRequest, arg.RequestedBy, arg.RequestedAt)
-	var existing_requests int64
-	err := row.Scan(&existing_requests)
-	return existing_requests, err
+func (q *Queries) InsertIncrementRequest(ctx context.Context, db DBTX, arg InsertIncrementRequestParams) error {
+	_, err := db.Exec(ctx, insertIncrementRequest, arg.RequestedBy, arg.RequestedAt)
+	return err
 }
 
 const listIncrementRequests = `-- name: ListIncrementRequests :many
@@ -111,15 +111,6 @@ WHERE id = 1
 
 func (q *Queries) ResetCounter(ctx context.Context, db DBTX) error {
 	_, err := db.Exec(ctx, resetCounter)
-	return err
-}
-
-const truncateIncrementRequests = `-- name: TruncateIncrementRequests :exec
-TRUNCATE TABLE increment_requests
-`
-
-func (q *Queries) TruncateIncrementRequests(ctx context.Context, db DBTX) error {
-	_, err := db.Exec(ctx, truncateIncrementRequests)
 	return err
 }
 

@@ -7,12 +7,32 @@
 
 package client
 
-// IndexWebPath returns the URL path to the web service index HTTP endpoint.
+// IndexWebPath returns the URL path to the web service Index HTTP endpoint.
 func IndexWebPath() string {
 	return "/"
 }
 
-// AnotherWebPath returns the URL path to the web service another HTTP endpoint.
+// AnotherWebPath returns the URL path to the web service Another HTTP endpoint.
 func AnotherWebPath() string {
 	return "/another"
+}
+
+// LoginGoogleWebPath returns the URL path to the web service LoginGoogle HTTP endpoint.
+func LoginGoogleWebPath() string {
+	return "/login/google"
+}
+
+// LoginGoogleCallbackWebPath returns the URL path to the web service LoginGoogleCallback HTTP endpoint.
+func LoginGoogleCallbackWebPath() string {
+	return "/login/google/callback"
+}
+
+// LogoutWebPath returns the URL path to the web service Logout HTTP endpoint.
+func LogoutWebPath() string {
+	return "/logout"
+}
+
+// SessionTokenWebPath returns the URL path to the web service SessionToken HTTP endpoint.
+func SessionTokenWebPath() string {
+	return "/session/token"
 }

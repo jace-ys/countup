@@ -3,7 +3,6 @@ package recovery
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"goa.design/clue/log"
@@ -38,7 +37,7 @@ func HTTP(logCtx context.Context) func(http.Handler) http.Handler {
 					}
 
 					ctx := log.WithContext(r.Context(), logCtx)
-					source := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+					source := r.Method + " " + r.URL.Path
 					instrument.EmitRecoveredPanicTelemetry(ctx, rvr, source)
 
 					if r.Header.Get("Connection") != "Upgrade" {

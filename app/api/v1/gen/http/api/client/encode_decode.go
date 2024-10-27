@@ -13,11 +13,115 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	api "github.com/jace-ys/countup/api/v1/gen/api"
 	apiviews "github.com/jace-ys/countup/api/v1/gen/api/views"
 	goahttp "goa.design/goa/v3/http"
 )
+
+// BuildAuthTokenRequest instantiates a HTTP request object with method and
+// path set to call the "api" service "AuthToken" endpoint
+func (c *Client) BuildAuthTokenRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: AuthTokenAPIPath()}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("api", "AuthToken", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeAuthTokenRequest returns an encoder for requests sent to the api
+// AuthToken server.
+func EncodeAuthTokenRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*api.AuthTokenPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("api", "AuthToken", "*api.AuthTokenPayload", v)
+		}
+		body := NewAuthTokenRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("api", "AuthToken", err)
+		}
+		return nil
+	}
+}
+
+// DecodeAuthTokenResponse returns a decoder for responses returned by the api
+// AuthToken endpoint. restoreBody controls whether the response body should be
+// restored after having been read.
+// DecodeAuthTokenResponse may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError): http.StatusUnauthorized
+//   - "existing_increment_request" (type *goa.ServiceError): http.StatusTooManyRequests
+//   - error: internal error
+func DecodeAuthTokenResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body AuthTokenResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("api", "AuthToken", err)
+			}
+			err = ValidateAuthTokenResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("api", "AuthToken", err)
+			}
+			res := NewAuthTokenResultOK(&body)
+			return res, nil
+		case http.StatusUnauthorized:
+			var (
+				body AuthTokenUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("api", "AuthToken", err)
+			}
+			err = ValidateAuthTokenUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("api", "AuthToken", err)
+			}
+			return nil, NewAuthTokenUnauthorized(&body)
+		case http.StatusTooManyRequests:
+			var (
+				body AuthTokenExistingIncrementRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("api", "AuthToken", err)
+			}
+			err = ValidateAuthTokenExistingIncrementRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("api", "AuthToken", err)
+			}
+			return nil, NewAuthTokenExistingIncrementRequest(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("api", "AuthToken", resp.StatusCode, string(body))
+		}
+	}
+}
 
 // BuildCounterGetRequest instantiates a HTTP request object with method and
 // path set to call the "api" service "CounterGet" endpoint
@@ -32,6 +136,26 @@ func (c *Client) BuildCounterGetRequest(ctx context.Context, v any) (*http.Reque
 	}
 
 	return req, nil
+}
+
+// EncodeCounterGetRequest returns an encoder for requests sent to the api
+// CounterGet server.
+func EncodeCounterGetRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*api.CounterGetPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("api", "CounterGet", "*api.CounterGetPayload", v)
+		}
+		{
+			head := p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		return nil
+	}
 }
 
 // DecodeCounterGetResponse returns a decoder for responses returned by the api
@@ -131,6 +255,14 @@ func EncodeCounterIncrementRequest(encoder func(*http.Request) goahttp.Encoder) 
 		if !ok {
 			return goahttp.ErrInvalidType("api", "CounterIncrement", "*api.CounterIncrementPayload", v)
 		}
+		{
+			head := p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
 		body := NewCounterIncrementRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
 			return goahttp.ErrEncodingError("api", "CounterIncrement", err)
@@ -209,109 +341,6 @@ func DecodeCounterIncrementResponse(decoder func(*http.Response) goahttp.Decoder
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("api", "CounterIncrement", resp.StatusCode, string(body))
-		}
-	}
-}
-
-// BuildEchoRequest instantiates a HTTP request object with method and path set
-// to call the "api" service "Echo" endpoint
-func (c *Client) BuildEchoRequest(ctx context.Context, v any) (*http.Request, error) {
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EchoAPIPath()}
-	req, err := http.NewRequest("POST", u.String(), nil)
-	if err != nil {
-		return nil, goahttp.ErrInvalidURL("api", "Echo", u.String(), err)
-	}
-	if ctx != nil {
-		req = req.WithContext(ctx)
-	}
-
-	return req, nil
-}
-
-// EncodeEchoRequest returns an encoder for requests sent to the api Echo
-// server.
-func EncodeEchoRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
-	return func(req *http.Request, v any) error {
-		p, ok := v.(*api.EchoPayload)
-		if !ok {
-			return goahttp.ErrInvalidType("api", "Echo", "*api.EchoPayload", v)
-		}
-		body := NewEchoRequestBody(p)
-		if err := encoder(req).Encode(&body); err != nil {
-			return goahttp.ErrEncodingError("api", "Echo", err)
-		}
-		return nil
-	}
-}
-
-// DecodeEchoResponse returns a decoder for responses returned by the api Echo
-// endpoint. restoreBody controls whether the response body should be restored
-// after having been read.
-// DecodeEchoResponse may return the following errors:
-//   - "unauthorized" (type *goa.ServiceError): http.StatusUnauthorized
-//   - "existing_increment_request" (type *goa.ServiceError): http.StatusTooManyRequests
-//   - error: internal error
-func DecodeEchoResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
-	return func(resp *http.Response) (any, error) {
-		if restoreBody {
-			b, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, err
-			}
-			resp.Body = io.NopCloser(bytes.NewBuffer(b))
-			defer func() {
-				resp.Body = io.NopCloser(bytes.NewBuffer(b))
-			}()
-		} else {
-			defer resp.Body.Close()
-		}
-		switch resp.StatusCode {
-		case http.StatusOK:
-			var (
-				body EchoResponseBody
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("api", "Echo", err)
-			}
-			err = ValidateEchoResponseBody(&body)
-			if err != nil {
-				return nil, goahttp.ErrValidationError("api", "Echo", err)
-			}
-			res := NewEchoResultOK(&body)
-			return res, nil
-		case http.StatusUnauthorized:
-			var (
-				body EchoUnauthorizedResponseBody
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("api", "Echo", err)
-			}
-			err = ValidateEchoUnauthorizedResponseBody(&body)
-			if err != nil {
-				return nil, goahttp.ErrValidationError("api", "Echo", err)
-			}
-			return nil, NewEchoUnauthorized(&body)
-		case http.StatusTooManyRequests:
-			var (
-				body EchoExistingIncrementRequestResponseBody
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("api", "Echo", err)
-			}
-			err = ValidateEchoExistingIncrementRequestResponseBody(&body)
-			if err != nil {
-				return nil, goahttp.ErrValidationError("api", "Echo", err)
-			}
-			return nil, NewEchoExistingIncrementRequest(&body)
-		default:
-			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("api", "Echo", resp.StatusCode, string(body))
 		}
 	}
 }

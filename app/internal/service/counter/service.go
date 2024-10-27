@@ -39,13 +39,13 @@ func New(db *pgxpool.Pool, workers *worker.Pool, store counterstore.Querier, fin
 }
 
 func (s *Service) GetInfo(ctx context.Context) (*Info, error) {
-	slog.Info(ctx, "getting counter")
-
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w: tx begin: %w", ErrDBConn, err)
 	}
 	defer tx.Rollback(ctx)
+
+	slog.Info(ctx, "getting counter")
 
 	counter, err := s.store.GetCounter(ctx, tx)
 	if err != nil {
@@ -75,14 +75,13 @@ func (s *Service) RequestIncrement(ctx context.Context, user string) error {
 
 	slog.Info(ctx, "inserting increment request")
 
-	existing, err := s.store.InsertIncrementRequest(ctx, tx, counterstore.InsertIncrementRequestParams{
+	if err := s.store.InsertIncrementRequest(ctx, tx, counterstore.InsertIncrementRequestParams{
 		RequestedBy: user,
 		RequestedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
 		},
-	})
-	if err != nil {
+	}); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
@@ -93,9 +92,16 @@ func (s *Service) RequestIncrement(ctx context.Context, user string) error {
 		return fmt.Errorf("%w: %w", ErrInsertIncrementRequest, err)
 	}
 
-	if existing > 0 {
+	slog.Info(ctx, "listing increment request")
+
+	requests, err := s.store.ListIncrementRequests(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrListIncrementRequests, err)
+	}
+
+	if len(requests) > 1 {
 		slog.Info(ctx, "existing increment requests in finalize window, skip enqueuing finalize job",
-			slog.KV("requests.count", existing),
+			slog.KV("requests.count", len(requests)),
 			slog.KV("finalize.window", s.finalizeWindow),
 		)
 	} else {

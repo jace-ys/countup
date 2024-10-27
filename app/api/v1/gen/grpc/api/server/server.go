@@ -20,26 +20,55 @@ import (
 
 // Server implements the apipb.APIServer interface.
 type Server struct {
+	AuthTokenH        goagrpc.UnaryHandler
 	CounterGetH       goagrpc.UnaryHandler
 	CounterIncrementH goagrpc.UnaryHandler
-	EchoH             goagrpc.UnaryHandler
 	apipb.UnimplementedAPIServer
 }
 
 // New instantiates the server struct with the api service endpoints.
 func New(e *api.Endpoints, uh goagrpc.UnaryHandler) *Server {
 	return &Server{
+		AuthTokenH:        NewAuthTokenHandler(e.AuthToken, uh),
 		CounterGetH:       NewCounterGetHandler(e.CounterGet, uh),
 		CounterIncrementH: NewCounterIncrementHandler(e.CounterIncrement, uh),
-		EchoH:             NewEchoHandler(e.Echo, uh),
 	}
+}
+
+// NewAuthTokenHandler creates a gRPC handler which serves the "api" service
+// "AuthToken" endpoint.
+func NewAuthTokenHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
+	if h == nil {
+		h = goagrpc.NewUnaryHandler(endpoint, DecodeAuthTokenRequest, EncodeAuthTokenResponse)
+	}
+	return h
+}
+
+// AuthToken implements the "AuthToken" method in apipb.APIServer interface.
+func (s *Server) AuthToken(ctx context.Context, message *apipb.AuthTokenRequest) (*apipb.AuthTokenResponse, error) {
+	ctx = context.WithValue(ctx, goa.MethodKey, "AuthToken")
+	ctx = context.WithValue(ctx, goa.ServiceKey, "api")
+	resp, err := s.AuthTokenH.Handle(ctx, message)
+	if err != nil {
+		var en goa.GoaErrorNamer
+		if errors.As(err, &en) {
+			switch en.GoaErrorName() {
+			case "unauthorized":
+				return nil, goagrpc.NewStatusError(codes.PermissionDenied, err, goagrpc.NewErrorResponse(err))
+			case "existing_increment_request":
+				return nil, goagrpc.NewStatusError(codes.AlreadyExists, err, goagrpc.NewErrorResponse(err))
+			}
+		}
+		return nil, goagrpc.EncodeError(err)
+	}
+	return resp.(*apipb.AuthTokenResponse), nil
 }
 
 // NewCounterGetHandler creates a gRPC handler which serves the "api" service
 // "CounterGet" endpoint.
 func NewCounterGetHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
 	if h == nil {
-		h = goagrpc.NewUnaryHandler(endpoint, nil, EncodeCounterGetResponse)
+		h = goagrpc.NewUnaryHandler(endpoint, DecodeCounterGetRequest, EncodeCounterGetResponse)
 	}
 	return h
 }
@@ -92,33 +121,4 @@ func (s *Server) CounterIncrement(ctx context.Context, message *apipb.CounterInc
 		return nil, goagrpc.EncodeError(err)
 	}
 	return resp.(*apipb.CounterIncrementResponse), nil
-}
-
-// NewEchoHandler creates a gRPC handler which serves the "api" service "Echo"
-// endpoint.
-func NewEchoHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
-	if h == nil {
-		h = goagrpc.NewUnaryHandler(endpoint, DecodeEchoRequest, EncodeEchoResponse)
-	}
-	return h
-}
-
-// Echo implements the "Echo" method in apipb.APIServer interface.
-func (s *Server) Echo(ctx context.Context, message *apipb.EchoRequest) (*apipb.EchoResponse, error) {
-	ctx = context.WithValue(ctx, goa.MethodKey, "Echo")
-	ctx = context.WithValue(ctx, goa.ServiceKey, "api")
-	resp, err := s.EchoH.Handle(ctx, message)
-	if err != nil {
-		var en goa.GoaErrorNamer
-		if errors.As(err, &en) {
-			switch en.GoaErrorName() {
-			case "unauthorized":
-				return nil, goagrpc.NewStatusError(codes.PermissionDenied, err, goagrpc.NewErrorResponse(err))
-			case "existing_increment_request":
-				return nil, goagrpc.NewStatusError(codes.AlreadyExists, err, goagrpc.NewErrorResponse(err))
-			}
-		}
-		return nil, goagrpc.EncodeError(err)
-	}
-	return resp.(*apipb.EchoResponse), nil
 }

@@ -1,14 +1,16 @@
 package web
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"fmt"
 	"html/template"
 
 	"github.com/alexliesenfeld/health"
+	"github.com/gorilla/securecookie"
+	"github.com/markbates/goth"
 
+	"github.com/jace-ys/countup/api/v1/gen/api"
 	"github.com/jace-ys/countup/api/v1/gen/web"
 	"github.com/jace-ys/countup/internal/healthz"
 )
@@ -24,17 +26,23 @@ var (
 var _ web.Service = (*Handler)(nil)
 
 type Handler struct {
-	tmpls *template.Template
+	authn   goth.Provider
+	cookies *securecookie.SecureCookie
+	api     *api.Client
+	tmpls   *template.Template
 }
 
-func NewHandler() (*Handler, error) {
+func NewHandler(authn goth.Provider, cookies *securecookie.SecureCookie, api *api.Client) (*Handler, error) {
 	tmpls, err := template.New("tmpls").ParseFS(templateFS, "**/*.html")
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)
 	}
 
 	return &Handler{
-		tmpls: tmpls,
+		authn:   authn,
+		cookies: cookies.MaxAge(86400),
+		api:     api,
+		tmpls:   tmpls,
 	}, nil
 }
 
@@ -49,21 +57,4 @@ func (h *Handler) HealthChecks() []health.Check {
 			},
 		},
 	}
-}
-
-var commonVars = struct {
-	BaseAPIEndpoint string
-}{
-	BaseAPIEndpoint: "/api/v1",
-}
-
-type renderData struct {
-	Vars any
-	Data any
-}
-
-func (h *Handler) render(page string, data any) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := h.tmpls.ExecuteTemplate(buf, page, renderData{commonVars, data})
-	return buf.Bytes(), err
 }

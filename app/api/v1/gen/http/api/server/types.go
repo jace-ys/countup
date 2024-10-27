@@ -13,16 +13,23 @@ import (
 	goa "goa.design/goa/v3/pkg"
 )
 
+// AuthTokenRequestBody is the type of the "api" service "AuthToken" endpoint
+// HTTP request body.
+type AuthTokenRequestBody struct {
+	Provider    *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
+	AccessToken *string `form:"access_token,omitempty" json:"access_token,omitempty" xml:"access_token,omitempty"`
+}
+
 // CounterIncrementRequestBody is the type of the "api" service
 // "CounterIncrement" endpoint HTTP request body.
 type CounterIncrementRequestBody struct {
 	User *string `form:"user,omitempty" json:"user,omitempty" xml:"user,omitempty"`
 }
 
-// EchoRequestBody is the type of the "api" service "Echo" endpoint HTTP
-// request body.
-type EchoRequestBody struct {
-	Text *string `form:"text,omitempty" json:"text,omitempty" xml:"text,omitempty"`
+// AuthTokenResponseBody is the type of the "api" service "AuthToken" endpoint
+// HTTP response body.
+type AuthTokenResponseBody struct {
+	Token string `form:"token" json:"token" xml:"token"`
 }
 
 // CounterGetResponseBody is the type of the "api" service "CounterGet"
@@ -43,10 +50,41 @@ type CounterIncrementResponseBody struct {
 	NextFinalizeAt  string `form:"next_finalize_at" json:"next_finalize_at" xml:"next_finalize_at"`
 }
 
-// EchoResponseBody is the type of the "api" service "Echo" endpoint HTTP
-// response body.
-type EchoResponseBody struct {
-	Text string `form:"text" json:"text" xml:"text"`
+// AuthTokenUnauthorizedResponseBody is the type of the "api" service
+// "AuthToken" endpoint HTTP response body for the "unauthorized" error.
+type AuthTokenUnauthorizedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// AuthTokenExistingIncrementRequestResponseBody is the type of the "api"
+// service "AuthToken" endpoint HTTP response body for the
+// "existing_increment_request" error.
+type AuthTokenExistingIncrementRequestResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
 // CounterGetUnauthorizedResponseBody is the type of the "api" service
@@ -123,41 +161,13 @@ type CounterIncrementExistingIncrementRequestResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// EchoUnauthorizedResponseBody is the type of the "api" service "Echo"
-// endpoint HTTP response body for the "unauthorized" error.
-type EchoUnauthorizedResponseBody struct {
-	// Name is the name of this class of errors.
-	Name string `form:"name" json:"name" xml:"name"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID string `form:"id" json:"id" xml:"id"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
-	Message string `form:"message" json:"message" xml:"message"`
-	// Is the error temporary?
-	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
-	// Is the error a timeout?
-	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
-	// Is the error a server-side fault?
-	Fault bool `form:"fault" json:"fault" xml:"fault"`
-}
-
-// EchoExistingIncrementRequestResponseBody is the type of the "api" service
-// "Echo" endpoint HTTP response body for the "existing_increment_request"
-// error.
-type EchoExistingIncrementRequestResponseBody struct {
-	// Name is the name of this class of errors.
-	Name string `form:"name" json:"name" xml:"name"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID string `form:"id" json:"id" xml:"id"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
-	Message string `form:"message" json:"message" xml:"message"`
-	// Is the error temporary?
-	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
-	// Is the error a timeout?
-	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
-	// Is the error a server-side fault?
-	Fault bool `form:"fault" json:"fault" xml:"fault"`
+// NewAuthTokenResponseBody builds the HTTP response body from the result of
+// the "AuthToken" endpoint of the "api" service.
+func NewAuthTokenResponseBody(res *api.AuthTokenResult) *AuthTokenResponseBody {
+	body := &AuthTokenResponseBody{
+		Token: res.Token,
+	}
+	return body
 }
 
 // NewCounterGetResponseBody builds the HTTP response body from the result of
@@ -184,11 +194,30 @@ func NewCounterIncrementResponseBody(res *apiviews.CounterInfoView) *CounterIncr
 	return body
 }
 
-// NewEchoResponseBody builds the HTTP response body from the result of the
-// "Echo" endpoint of the "api" service.
-func NewEchoResponseBody(res *api.EchoResult) *EchoResponseBody {
-	body := &EchoResponseBody{
-		Text: res.Text,
+// NewAuthTokenUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "AuthToken" endpoint of the "api" service.
+func NewAuthTokenUnauthorizedResponseBody(res *goa.ServiceError) *AuthTokenUnauthorizedResponseBody {
+	body := &AuthTokenUnauthorizedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewAuthTokenExistingIncrementRequestResponseBody builds the HTTP response
+// body from the result of the "AuthToken" endpoint of the "api" service.
+func NewAuthTokenExistingIncrementRequestResponseBody(res *goa.ServiceError) *AuthTokenExistingIncrementRequestResponseBody {
+	body := &AuthTokenExistingIncrementRequestResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
 	}
 	return body
 }
@@ -250,51 +279,50 @@ func NewCounterIncrementExistingIncrementRequestResponseBody(res *goa.ServiceErr
 	return body
 }
 
-// NewEchoUnauthorizedResponseBody builds the HTTP response body from the
-// result of the "Echo" endpoint of the "api" service.
-func NewEchoUnauthorizedResponseBody(res *goa.ServiceError) *EchoUnauthorizedResponseBody {
-	body := &EchoUnauthorizedResponseBody{
-		Name:      res.Name,
-		ID:        res.ID,
-		Message:   res.Message,
-		Temporary: res.Temporary,
-		Timeout:   res.Timeout,
-		Fault:     res.Fault,
+// NewAuthTokenPayload builds a api service AuthToken endpoint payload.
+func NewAuthTokenPayload(body *AuthTokenRequestBody) *api.AuthTokenPayload {
+	v := &api.AuthTokenPayload{
+		Provider:    *body.Provider,
+		AccessToken: *body.AccessToken,
 	}
-	return body
+
+	return v
 }
 
-// NewEchoExistingIncrementRequestResponseBody builds the HTTP response body
-// from the result of the "Echo" endpoint of the "api" service.
-func NewEchoExistingIncrementRequestResponseBody(res *goa.ServiceError) *EchoExistingIncrementRequestResponseBody {
-	body := &EchoExistingIncrementRequestResponseBody{
-		Name:      res.Name,
-		ID:        res.ID,
-		Message:   res.Message,
-		Temporary: res.Temporary,
-		Timeout:   res.Timeout,
-		Fault:     res.Fault,
-	}
-	return body
+// NewCounterGetPayload builds a api service CounterGet endpoint payload.
+func NewCounterGetPayload(token string) *api.CounterGetPayload {
+	v := &api.CounterGetPayload{}
+	v.Token = token
+
+	return v
 }
 
 // NewCounterIncrementPayload builds a api service CounterIncrement endpoint
 // payload.
-func NewCounterIncrementPayload(body *CounterIncrementRequestBody) *api.CounterIncrementPayload {
+func NewCounterIncrementPayload(body *CounterIncrementRequestBody, token string) *api.CounterIncrementPayload {
 	v := &api.CounterIncrementPayload{
 		User: *body.User,
 	}
+	v.Token = token
 
 	return v
 }
 
-// NewEchoPayload builds a api service Echo endpoint payload.
-func NewEchoPayload(body *EchoRequestBody) *api.EchoPayload {
-	v := &api.EchoPayload{
-		Text: *body.Text,
+// ValidateAuthTokenRequestBody runs the validations defined on
+// AuthTokenRequestBody
+func ValidateAuthTokenRequestBody(body *AuthTokenRequestBody) (err error) {
+	if body.Provider == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
-
-	return v
+	if body.AccessToken == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("access_token", "body"))
+	}
+	if body.Provider != nil {
+		if !(*body.Provider == "google") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"google"}))
+		}
+	}
+	return
 }
 
 // ValidateCounterIncrementRequestBody runs the validations defined on
@@ -302,14 +330,6 @@ func NewEchoPayload(body *EchoRequestBody) *api.EchoPayload {
 func ValidateCounterIncrementRequestBody(body *CounterIncrementRequestBody) (err error) {
 	if body.User == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("user", "body"))
-	}
-	return
-}
-
-// ValidateEchoRequestBody runs the validations defined on EchoRequestBody
-func ValidateEchoRequestBody(body *EchoRequestBody) (err error) {
-	if body.Text == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("text", "body"))
 	}
 	return
 }

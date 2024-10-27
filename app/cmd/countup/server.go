@@ -5,16 +5,25 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gorilla/securecookie"
+	"github.com/markbates/goth/providers/google"
+
 	apiv1 "github.com/jace-ys/countup/api/v1"
 	genapi "github.com/jace-ys/countup/api/v1/gen/api"
+	grpcapiclient "github.com/jace-ys/countup/api/v1/gen/grpc/api/client"
 	apipb "github.com/jace-ys/countup/api/v1/gen/grpc/api/pb"
 	grpcapi "github.com/jace-ys/countup/api/v1/gen/grpc/api/server"
+	teapotpb "github.com/jace-ys/countup/api/v1/gen/grpc/teapot/pb"
+	grpcteapot "github.com/jace-ys/countup/api/v1/gen/grpc/teapot/server"
 	httpapi "github.com/jace-ys/countup/api/v1/gen/http/api/server"
+	httpteapot "github.com/jace-ys/countup/api/v1/gen/http/teapot/server"
 	httpweb "github.com/jace-ys/countup/api/v1/gen/http/web/server"
+	genteapot "github.com/jace-ys/countup/api/v1/gen/teapot"
 	genweb "github.com/jace-ys/countup/api/v1/gen/web"
 	"github.com/jace-ys/countup/internal/app"
-	"github.com/jace-ys/countup/internal/endpoints"
+	"github.com/jace-ys/countup/internal/endpoint"
 	"github.com/jace-ys/countup/internal/handler/api"
+	"github.com/jace-ys/countup/internal/handler/teapot"
 	"github.com/jace-ys/countup/internal/handler/web"
 	"github.com/jace-ys/countup/internal/instrument"
 	"github.com/jace-ys/countup/internal/postgres"
@@ -28,6 +37,11 @@ import (
 type ServerCmd struct {
 	Port      int `env:"PORT" default:"8080" help:"Port for application server to listen on."`
 	AdminPort int `env:"ADMIN_PORT" default:"9090" help:"Port for admin server to listen on."`
+
+	TLS struct {
+		CertFile string `env:"CERT_FILE" default:"/etc/ssl/certs/cert.pem" help:"TLS certificate."`
+		KeyFile  string `env:"KEY_FILE" default:"/etc/ssl/certs/key.pem" help:"TLS key."`
+	} `embed:"" envprefix:"TLS_" prefix:"tls."`
 
 	OTLP struct {
 		MetricsEndpoint string `env:"METRICS_ENDPOINT" default:"127.0.0.1:4317" help:"OTLP gRPC endpoint to send OpenTelemetry metrics to."`
@@ -45,6 +59,12 @@ type ServerCmd struct {
 	Counter struct {
 		FinalizeWindow time.Duration `env:"FINALIZE_WINDOW" default:"1m" help:"Time period to wait before finalizing counter increments."`
 	} `embed:"" envprefix:"COUNTER_" prefix:"counter."`
+
+	OAuth struct {
+		ClientID     string `env:"CLIENT_ID" required:"" help:"Client ID for the Google OAuth2 configuration."`
+		ClientSecret string `env:"CLIENT_SECRET" required:"" help:"Client secret for the Google OAuth2 configuration."`
+		RedirectURL  string `env:"REDIRECT_URL" default:"http://localhost:8080/login/google/callback" help:"URL to redirect to upon successful OAuth2 authentication."`
+	} `embed:"" envprefix:"OAUTH_" prefix:"oauth."`
 }
 
 func (c *ServerCmd) Run(ctx context.Context, g *Globals) error {
@@ -69,48 +89,85 @@ func (c *ServerCmd) Run(ctx context.Context, g *Globals) error {
 		return fmt.Errorf("init worker pool: %w", err)
 	}
 
-	httpsrv := app.NewHTTPServer(ctx, "app.http", c.Port)
-	grpcsrv := app.NewGRPCServer[apipb.APIServer](ctx, "app.grpc", c.Port+1)
+	authn := google.New(c.OAuth.ClientID, c.OAuth.ClientSecret, c.OAuth.RedirectURL,
+		"https://www.googleapis.com/auth/userinfo.email",
+	)
+
+	counterSvc := counter.New(db, worker, counterstore.New(), c.Counter.FinalizeWindow)
+	// userSvc := user.New(db, counterstore.New())
+
+	httpSrv := app.NewHTTPServer(ctx, "app.http", c.Port, c.TLS.CertFile, c.TLS.KeyFile)
+	grpcSrv := app.NewGRPCServer[apipb.APIServer](ctx, "app.grpc", c.Port+1, c.TLS.CertFile, c.TLS.KeyFile)
 
 	admin := app.NewAdminServer(ctx, c.AdminPort, g.Debug)
-	admin.Administer(httpsrv, grpcsrv, worker)
+	admin.Administer(httpSrv, grpcSrv, worker)
 
 	{
-		countersvc := counter.New(db, worker, counterstore.New(), c.Counter.FinalizeWindow)
-		// usersvc := counter.New(db, counterstore.New())
-
-		handler, err := api.NewHandler(worker, countersvc)
+		handler, err := api.NewHandler(authn, counterSvc)
 		if err != nil {
-			return fmt.Errorf("init handler: %w", err)
+			return fmt.Errorf("init api handler: %w", err)
 		}
 		admin.Administer(handler)
 
-		ep := endpoints.Goa(genapi.NewEndpoints).Adapt(handler)
+		ep := endpoint.Goa(genapi.NewEndpoints).Adapt(handler)
 
 		{
 			transport := transport.GoaHTTP(httpapi.New, httpapi.Mount)
-			httpsrv.RegisterHandler("/api/v1", transport.Adapt(ctx, ep, apiv1.OpenAPIFS))
+			httpSrv.RegisterHandler("/api/v1", transport.Adapt(ctx, ep, apiv1.OpenAPIFS))
 		}
 		{
 			transport := transport.GoaGRPC(grpcapi.New)
-			grpcsrv.RegisterHandler(&apipb.API_ServiceDesc, transport.Adapt(ctx, ep))
+			grpcSrv.RegisterHandler(&apipb.API_ServiceDesc, transport.Adapt(ctx, ep))
 		}
 	}
 
 	{
-		handler, err := web.NewHandler()
+		handler, err := teapot.NewHandler(worker)
 		if err != nil {
-			return fmt.Errorf("init web: %w", err)
+			return fmt.Errorf("init teapot handler: %w", err)
 		}
 		admin.Administer(handler)
 
-		ep := endpoints.Goa(genweb.NewEndpoints).Adapt(handler)
+		ep := endpoint.Goa(genteapot.NewEndpoints).Adapt(handler)
 
-		transport := transport.GoaHTTP(httpweb.New, httpweb.Mount)
-		httpsrv.RegisterHandler("/", transport.Adapt(ctx, ep, web.StaticFS))
+		{
+			transport := transport.GoaHTTP(httpteapot.New, httpteapot.Mount)
+			httpSrv.RegisterHandler("/teapot", transport.Adapt(ctx, ep, apiv1.OpenAPIFS))
+		}
+		{
+			transport := transport.GoaGRPC(grpcteapot.New)
+			grpcSrv.RegisterHandler(&teapotpb.Teapot_ServiceDesc, transport.Adapt(ctx, ep))
+		}
 	}
 
-	err = app.New(httpsrv, grpcsrv, admin, worker).Run(ctx)
+	{
+		cookies := securecookie.New(securecookie.GenerateRandomKey(32), securecookie.GenerateRandomKey(16))
+
+		tc, err := transport.GoaGRPCClient(grpcapiclient.NewClient).Adapt(grpcSrv.Addr())
+		if err != nil {
+			return fmt.Errorf("init api client: %w", err)
+		}
+		defer tc.Close()
+
+		apiClient := genapi.NewClient(
+			tc.Client().AuthToken(),
+			tc.Client().CounterGet(),
+			tc.Client().CounterIncrement(),
+		)
+
+		handler, err := web.NewHandler(authn, cookies, apiClient)
+		if err != nil {
+			return fmt.Errorf("init web handler: %w", err)
+		}
+		admin.Administer(handler)
+
+		ep := endpoint.Goa(genweb.NewEndpoints).Adapt(handler)
+
+		transport := transport.GoaHTTP(httpweb.New, httpweb.Mount)
+		httpSrv.RegisterHandler("/", transport.Adapt(ctx, ep, web.StaticFS))
+	}
+
+	err = app.New(httpSrv, grpcSrv, admin, worker).Run(ctx)
 	if err != nil {
 		slog.Error(ctx, "encountered error while running app", err)
 		return fmt.Errorf("app run: %w", err)

@@ -7,8 +7,10 @@ require (
 	github.com/alexliesenfeld/health v0.8.0
 	github.com/exaring/otelpgx v0.6.2
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/gorilla/securecookie v1.1.2
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx/v5 v5.7.1
+	github.com/markbates/goth v1.80.0
 	github.com/pressly/goose/v3 v3.22.1
 	github.com/riverqueue/river v0.13.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.13.0
@@ -31,6 +33,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	github.com/aws/smithy-go v1.22.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -64,6 +67,7 @@ require (
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/text v0.19.0 // indirect

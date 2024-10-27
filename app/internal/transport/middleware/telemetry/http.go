@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -12,7 +11,7 @@ import (
 func HTTP(attrs ...attribute.KeyValue) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			operation := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+			operation := r.Method + " " + r.URL.Path
 
 			opts := []otelhttp.Option{
 				otelhttp.WithSpanOptions(trace.WithAttributes(attrs...)),

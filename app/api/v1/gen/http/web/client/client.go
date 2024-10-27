@@ -17,12 +17,27 @@ import (
 
 // Client lists the web service endpoint HTTP clients.
 type Client struct {
-	// Index Doer is the HTTP client used to make requests to the index endpoint.
+	// Index Doer is the HTTP client used to make requests to the Index endpoint.
 	IndexDoer goahttp.Doer
 
-	// Another Doer is the HTTP client used to make requests to the another
+	// Another Doer is the HTTP client used to make requests to the Another
 	// endpoint.
 	AnotherDoer goahttp.Doer
+
+	// LoginGoogle Doer is the HTTP client used to make requests to the LoginGoogle
+	// endpoint.
+	LoginGoogleDoer goahttp.Doer
+
+	// LoginGoogleCallback Doer is the HTTP client used to make requests to the
+	// LoginGoogleCallback endpoint.
+	LoginGoogleCallbackDoer goahttp.Doer
+
+	// Logout Doer is the HTTP client used to make requests to the Logout endpoint.
+	LogoutDoer goahttp.Doer
+
+	// SessionToken Doer is the HTTP client used to make requests to the
+	// SessionToken endpoint.
+	SessionTokenDoer goahttp.Doer
 
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
@@ -44,17 +59,21 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		IndexDoer:           doer,
-		AnotherDoer:         doer,
-		RestoreResponseBody: restoreBody,
-		scheme:              scheme,
-		host:                host,
-		decoder:             dec,
-		encoder:             enc,
+		IndexDoer:               doer,
+		AnotherDoer:             doer,
+		LoginGoogleDoer:         doer,
+		LoginGoogleCallbackDoer: doer,
+		LogoutDoer:              doer,
+		SessionTokenDoer:        doer,
+		RestoreResponseBody:     restoreBody,
+		scheme:                  scheme,
+		host:                    host,
+		decoder:                 dec,
+		encoder:                 enc,
 	}
 }
 
-// Index returns an endpoint that makes HTTP requests to the web service index
+// Index returns an endpoint that makes HTTP requests to the web service Index
 // server.
 func (c *Client) Index() goa.Endpoint {
 	var (
@@ -67,14 +86,14 @@ func (c *Client) Index() goa.Endpoint {
 		}
 		resp, err := c.IndexDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("web", "index", err)
+			return nil, goahttp.ErrRequestError("web", "Index", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
 // Another returns an endpoint that makes HTTP requests to the web service
-// another server.
+// Another server.
 func (c *Client) Another() goa.Endpoint {
 	var (
 		decodeResponse = DecodeAnotherResponse(c.decoder, c.RestoreResponseBody)
@@ -86,7 +105,98 @@ func (c *Client) Another() goa.Endpoint {
 		}
 		resp, err := c.AnotherDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("web", "another", err)
+			return nil, goahttp.ErrRequestError("web", "Another", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// LoginGoogle returns an endpoint that makes HTTP requests to the web service
+// LoginGoogle server.
+func (c *Client) LoginGoogle() goa.Endpoint {
+	var (
+		decodeResponse = DecodeLoginGoogleResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildLoginGoogleRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.LoginGoogleDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("web", "LoginGoogle", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// LoginGoogleCallback returns an endpoint that makes HTTP requests to the web
+// service LoginGoogleCallback server.
+func (c *Client) LoginGoogleCallback() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeLoginGoogleCallbackRequest(c.encoder)
+		decodeResponse = DecodeLoginGoogleCallbackResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildLoginGoogleCallbackRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.LoginGoogleCallbackDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("web", "LoginGoogleCallback", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// Logout returns an endpoint that makes HTTP requests to the web service
+// Logout server.
+func (c *Client) Logout() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeLogoutRequest(c.encoder)
+		decodeResponse = DecodeLogoutResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildLogoutRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.LogoutDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("web", "Logout", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// SessionToken returns an endpoint that makes HTTP requests to the web service
+// SessionToken server.
+func (c *Client) SessionToken() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeSessionTokenRequest(c.encoder)
+		decodeResponse = DecodeSessionTokenResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildSessionTokenRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.SessionTokenDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("web", "SessionToken", err)
 		}
 		return decodeResponse(resp)
 	}

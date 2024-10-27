@@ -1,12 +1,12 @@
-package endpoints
+package endpoint
 
 import (
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
 	goa "goa.design/goa/v3/pkg"
 
-	"github.com/jace-ys/countup/internal/endpoints/middleware/goaerror"
-	"github.com/jace-ys/countup/internal/endpoints/middleware/tracer"
+	"github.com/jace-ys/countup/internal/endpoint/middleware/goaerror"
+	"github.com/jace-ys/countup/internal/endpoint/middleware/tracer"
 )
 
 type GoaAdapter[S any, E GoaEndpoints] struct {

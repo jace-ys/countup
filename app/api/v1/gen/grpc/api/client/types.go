@@ -13,6 +13,25 @@ import (
 	apipb "github.com/jace-ys/countup/api/v1/gen/grpc/api/pb"
 )
 
+// NewProtoAuthTokenRequest builds the gRPC request type from the payload of
+// the "AuthToken" endpoint of the "api" service.
+func NewProtoAuthTokenRequest(payload *api.AuthTokenPayload) *apipb.AuthTokenRequest {
+	message := &apipb.AuthTokenRequest{
+		Provider:    payload.Provider,
+		AccessToken: payload.AccessToken,
+	}
+	return message
+}
+
+// NewAuthTokenResult builds the result type of the "AuthToken" endpoint of the
+// "api" service from the gRPC response type.
+func NewAuthTokenResult(message *apipb.AuthTokenResponse) *api.AuthTokenResult {
+	result := &api.AuthTokenResult{
+		Token: message.Token,
+	}
+	return result
+}
+
 // NewProtoCounterGetRequest builds the gRPC request type from the payload of
 // the "CounterGet" endpoint of the "api" service.
 func NewProtoCounterGetRequest() *apipb.CounterGetRequest {
@@ -49,24 +68,6 @@ func NewCounterIncrementResult(message *apipb.CounterIncrementResponse) *apiview
 		LastIncrementBy: &message.LastIncrementBy,
 		LastIncrementAt: &message.LastIncrementAt,
 		NextFinalizeAt:  &message.NextFinalizeAt,
-	}
-	return result
-}
-
-// NewProtoEchoRequest builds the gRPC request type from the payload of the
-// "Echo" endpoint of the "api" service.
-func NewProtoEchoRequest(payload *api.EchoPayload) *apipb.EchoRequest {
-	message := &apipb.EchoRequest{
-		Text: payload.Text,
-	}
-	return message
-}
-
-// NewEchoResult builds the result type of the "Echo" endpoint of the "api"
-// service from the gRPC response type.
-func NewEchoResult(message *apipb.EchoResponse) *api.EchoResult {
-	result := &api.EchoResult{
-		Text: message.Text,
 	}
 	return result
 }

@@ -27,12 +27,31 @@ func NewClient(cc *grpc.ClientConn, opts ...grpc.CallOption) *Client {
 		grpccli: apipb.NewAPIClient(cc),
 		opts:    opts,
 	}
+} // AuthToken calls the "AuthToken" function in apipb.APIClient interface.
+func (c *Client) AuthToken() goa.Endpoint {
+	return func(ctx context.Context, v any) (any, error) {
+		inv := goagrpc.NewInvoker(
+			BuildAuthTokenFunc(c.grpccli, c.opts...),
+			EncodeAuthTokenRequest,
+			DecodeAuthTokenResponse)
+		res, err := inv.Invoke(ctx, v)
+		if err != nil {
+			resp := goagrpc.DecodeError(err)
+			switch message := resp.(type) {
+			case *goapb.ErrorResponse:
+				return nil, goagrpc.NewServiceError(message)
+			default:
+				return nil, goa.Fault(err.Error())
+			}
+		}
+		return res, nil
+	}
 } // CounterGet calls the "CounterGet" function in apipb.APIClient interface.
 func (c *Client) CounterGet() goa.Endpoint {
 	return func(ctx context.Context, v any) (any, error) {
 		inv := goagrpc.NewInvoker(
 			BuildCounterGetFunc(c.grpccli, c.opts...),
-			nil,
+			EncodeCounterGetRequest,
 			DecodeCounterGetResponse)
 		res, err := inv.Invoke(ctx, v)
 		if err != nil {
@@ -54,25 +73,6 @@ func (c *Client) CounterIncrement() goa.Endpoint {
 			BuildCounterIncrementFunc(c.grpccli, c.opts...),
 			EncodeCounterIncrementRequest,
 			DecodeCounterIncrementResponse)
-		res, err := inv.Invoke(ctx, v)
-		if err != nil {
-			resp := goagrpc.DecodeError(err)
-			switch message := resp.(type) {
-			case *goapb.ErrorResponse:
-				return nil, goagrpc.NewServiceError(message)
-			default:
-				return nil, goa.Fault(err.Error())
-			}
-		}
-		return res, nil
-	}
-} // Echo calls the "Echo" function in apipb.APIClient interface.
-func (c *Client) Echo() goa.Endpoint {
-	return func(ctx context.Context, v any) (any, error) {
-		inv := goagrpc.NewInvoker(
-			BuildEchoFunc(c.grpccli, c.opts...),
-			EncodeEchoRequest,
-			DecodeEchoResponse)
 		res, err := inv.Invoke(ctx, v)
 		if err != nil {
 			resp := goagrpc.DecodeError(err)

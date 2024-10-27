@@ -10,7 +10,7 @@ import (
 
 func HTTPCheck(name, url string) health.Check {
 	return health.Check{
-		Name: fmt.Sprintf("http:%s", name),
+		Name: "http:" + name,
 		Check: func(ctx context.Context) error {
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 			if err != nil {

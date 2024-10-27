@@ -22,7 +22,8 @@ func Endpoint(e goa.Endpoint) goa.Endpoint {
 			method = m
 		}
 
-		ctx, span := instrument.OTel.Tracer().Start(ctx, fmt.Sprintf("goa.endpoint/%s.%s", service, method))
+		source := fmt.Sprintf("goa.endpoint/%s.%s", service, method)
+		ctx, span := instrument.OTel.Tracer().Start(ctx, source)
 		span.SetAttributes(attribute.String("endpoint.service", service), attribute.String("endpoint.method", method))
 		defer span.End()
 

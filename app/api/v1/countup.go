@@ -16,7 +16,7 @@ var _ = API("countup", func() {
 	Description("A production-ready Go service deployed on Kubernetes")
 	Version("1.0.0")
 	Server("countup", func() {
-		Services("api", "web")
+		Services("api", "web", "teapot")
 		Host("local-http", func() {
 			URI("http://localhost:8080")
 		})
@@ -24,6 +24,10 @@ var _ = API("countup", func() {
 			URI("grpc://localhost:8081")
 		})
 	})
+})
+
+var JWTAuth = JWTSecurity("jwt", func() {
+	Scope("api")
 })
 
 var CounterInfo = ResultType("application/vnd.countup.counter-info`", "CounterInfo", func() {
@@ -35,12 +39,17 @@ var CounterInfo = ResultType("application/vnd.countup.counter-info`", "CounterIn
 })
 
 var _ = Service("api", func() {
+	Security(JWTAuth, func() {
+		Scope("api")
+	})
+
 	Error("unauthorized")
 	Error("existing_increment_request", func() {
 		Temporary()
 	})
 
 	HTTP(func() {
+		Path("/api/v1")
 		Response("unauthorized", StatusUnauthorized)
 		Response("existing_increment_request", StatusTooManyRequests)
 	})
@@ -50,7 +59,38 @@ var _ = Service("api", func() {
 		Response("existing_increment_request", CodeAlreadyExists)
 	})
 
+	Method("AuthToken", func() {
+		NoSecurity()
+
+		Payload(func() {
+			Field(1, "provider", String, func() {
+				Enum("google")
+			})
+			Field(2, "access_token", String)
+			Required("provider", "access_token")
+		})
+
+		Result(func() {
+			Field(1, "token", String)
+			Required("token")
+		})
+
+		HTTP(func() {
+			POST("/auth/token")
+			Response(StatusOK)
+		})
+
+		GRPC(func() {
+			Response(CodeOK)
+		})
+	})
+
 	Method("CounterGet", func() {
+		Payload(func() {
+			TokenField(1, "token", String)
+			Required("token")
+		})
+
 		Result(CounterInfo)
 
 		HTTP(func() {
@@ -65,14 +105,15 @@ var _ = Service("api", func() {
 
 	Method("CounterIncrement", func() {
 		Payload(func() {
-			Field(1, "user", String)
-			Required("user")
+			TokenField(1, "token", String)
+			Field(2, "user", String)
+			Required("token", "user")
 		})
 
 		Result(CounterInfo)
 
 		HTTP(func() {
-			POST("/counter/inc")
+			POST("/counter")
 			Response(StatusAccepted)
 		})
 
@@ -81,7 +122,15 @@ var _ = Service("api", func() {
 		})
 	})
 
+	Files("/openapi.json", "gen/http/openapi3.json")
+})
+
+var _ = Service("teapot", func() {
+	Error("unwell")
+
 	Method("Echo", func() {
+		NoSecurity()
+
 		Payload(func() {
 			Field(1, "text", String)
 			Required("text")
@@ -106,7 +155,14 @@ var _ = Service("api", func() {
 })
 
 var _ = Service("web", func() {
-	Method("index", func() {
+	Error("unauthorized")
+
+	HTTP(func() {
+		Path("/")
+		Response("unauthorized", StatusUnauthorized)
+	})
+
+	Method("Index", func() {
 		Result(Bytes)
 		HTTP(func() {
 			GET("/")
@@ -116,7 +172,7 @@ var _ = Service("web", func() {
 		})
 	})
 
-	Method("another", func() {
+	Method("Another", func() {
 		Result(Bytes)
 		HTTP(func() {
 			GET("/another")
@@ -126,5 +182,104 @@ var _ = Service("web", func() {
 		})
 	})
 
-	Files("/static/{*path}", "static/")
+	Method("LoginGoogle", func() {
+		Result(func() {
+			Attribute("redirect_url", String)
+			Attribute("session_cookie", String)
+			Required("redirect_url", "session_cookie")
+		})
+
+		HTTP(func() {
+			GET("/login/google")
+			Response(StatusFound, func() {
+				Header("redirect_url:Location", String)
+				Cookie("session_cookie:countup.session")
+				CookieSameSite(CookieSameSiteLax)
+				CookieMaxAge(86400)
+				CookieHTTPOnly()
+				//TODO: CookieSecure()
+				CookiePath("/")
+			})
+		})
+	})
+
+	Method("LoginGoogleCallback", func() {
+		Payload(func() {
+			Attribute("code", String)
+			Attribute("state", String)
+			Attribute("session_cookie", String)
+			Required("code", "state", "session_cookie")
+		})
+
+		Result(func() {
+			Attribute("redirect_url", String)
+			Attribute("session_cookie", String)
+			Required("redirect_url", "session_cookie")
+		})
+
+		HTTP(func() {
+			GET("/login/google/callback")
+			Param("code", String)
+			Param("state", String)
+			Cookie("session_cookie:countup.session")
+			Response(StatusFound, func() {
+				Header("redirect_url:Location", String)
+				Cookie("session_cookie:countup.session")
+				CookieSameSite(CookieSameSiteLax)
+				CookieMaxAge(86400)
+				CookieHTTPOnly()
+				//TODO: CookieSecure()
+				CookiePath("/")
+			})
+		})
+	})
+
+	Method("Logout", func() {
+		Payload(func() {
+			Attribute("session_cookie", String)
+			Required("session_cookie")
+		})
+
+		Result(func() {
+			Attribute("redirect_url", String)
+			Attribute("session_cookie", String)
+			Required("redirect_url", "session_cookie")
+		})
+
+		HTTP(func() {
+			GET("/logout")
+			Cookie("session_cookie:countup.session")
+			Response(StatusFound, func() {
+				Header("redirect_url:Location", String)
+				Cookie("session_cookie:countup.session")
+				CookieSameSite(CookieSameSiteLax)
+				CookieMaxAge(86400)
+				CookieHTTPOnly()
+				//TODO: CookieSecure()
+				CookiePath("/")
+			})
+		})
+	})
+
+	Method("SessionToken", func() {
+		Payload(func() {
+			Attribute("session_cookie", String)
+			Required("session_cookie")
+		})
+
+		Result(func() {
+			Attribute("token", String)
+			Required("token")
+		})
+
+		HTTP(func() {
+			GET("/session/token")
+			Cookie("session_cookie:countup.session")
+			Response(StatusOK, func() {
+				ContentType("application/json")
+			})
+		})
+	})
+
+	Files("/static/*", "static/")
 })

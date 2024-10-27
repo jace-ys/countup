@@ -12,39 +12,66 @@ import (
 	"fmt"
 
 	api "github.com/jace-ys/countup/api/v1/gen/api"
+	goa "goa.design/goa/v3/pkg"
 )
 
-// BuildCounterIncrementPayload builds the payload for the api CounterIncrement
-// endpoint from CLI flags.
-func BuildCounterIncrementPayload(apiCounterIncrementBody string) (*api.CounterIncrementPayload, error) {
+// BuildAuthTokenPayload builds the payload for the api AuthToken endpoint from
+// CLI flags.
+func BuildAuthTokenPayload(apiAuthTokenBody string) (*api.AuthTokenPayload, error) {
 	var err error
-	var body CounterIncrementRequestBody
+	var body AuthTokenRequestBody
 	{
-		err = json.Unmarshal([]byte(apiCounterIncrementBody), &body)
+		err = json.Unmarshal([]byte(apiAuthTokenBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"user\": \"Nihil doloribus et sed sequi consequatur.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"access_token\": \"Omnis cumque est asperiores dolorem.\",\n      \"provider\": \"google\"\n   }'")
+		}
+		if !(body.Provider == "google") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", body.Provider, []any{"google"}))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
-	v := &api.CounterIncrementPayload{
-		User: body.User,
+	v := &api.AuthTokenPayload{
+		Provider:    body.Provider,
+		AccessToken: body.AccessToken,
 	}
 
 	return v, nil
 }
 
-// BuildEchoPayload builds the payload for the api Echo endpoint from CLI flags.
-func BuildEchoPayload(apiEchoBody string) (*api.EchoPayload, error) {
-	var err error
-	var body EchoRequestBody
+// BuildCounterGetPayload builds the payload for the api CounterGet endpoint
+// from CLI flags.
+func BuildCounterGetPayload(apiCounterGetToken string) (*api.CounterGetPayload, error) {
+	var token string
 	{
-		err = json.Unmarshal([]byte(apiEchoBody), &body)
+		token = apiCounterGetToken
+	}
+	v := &api.CounterGetPayload{}
+	v.Token = token
+
+	return v, nil
+}
+
+// BuildCounterIncrementPayload builds the payload for the api CounterIncrement
+// endpoint from CLI flags.
+func BuildCounterIncrementPayload(apiCounterIncrementBody string, apiCounterIncrementToken string) (*api.CounterIncrementPayload, error) {
+	var err error
+	var body CounterIncrementRequestBody
+	{
+		err = json.Unmarshal([]byte(apiCounterIncrementBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"text\": \"Vel omnis quo sit.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"user\": \"Quae cupiditate.\"\n   }'")
 		}
 	}
-	v := &api.EchoPayload{
-		Text: body.Text,
+	var token string
+	{
+		token = apiCounterIncrementToken
 	}
+	v := &api.CounterIncrementPayload{
+		User: body.User,
+	}
+	v.Token = token
 
 	return v, nil
 }

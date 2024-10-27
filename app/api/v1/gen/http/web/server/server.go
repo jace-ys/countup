@@ -19,10 +19,14 @@ import (
 
 // Server lists the web service endpoint HTTP handlers.
 type Server struct {
-	Mounts  []*MountPoint
-	Index   http.Handler
-	Another http.Handler
-	Static  http.Handler
+	Mounts              []*MountPoint
+	Index               http.Handler
+	Another             http.Handler
+	LoginGoogle         http.Handler
+	LoginGoogleCallback http.Handler
+	Logout              http.Handler
+	SessionToken        http.Handler
+	Static              http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -54,16 +58,24 @@ func New(
 	if fileSystemStatic == nil {
 		fileSystemStatic = http.Dir(".")
 	}
-	fileSystemStatic = appendPrefix(fileSystemStatic, "/static/")
+	fileSystemStatic = appendPrefix(fileSystemStatic, "/static")
 	return &Server{
 		Mounts: []*MountPoint{
 			{"Index", "GET", "/"},
 			{"Another", "GET", "/another"},
-			{"Serve static/", "GET", "/static"},
+			{"LoginGoogle", "GET", "/login/google"},
+			{"LoginGoogleCallback", "GET", "/login/google/callback"},
+			{"Logout", "GET", "/logout"},
+			{"SessionToken", "GET", "/session/token"},
+			{"Serve static/", "GET", "/static/*"},
 		},
-		Index:   NewIndexHandler(e.Index, mux, decoder, encoder, errhandler, formatter),
-		Another: NewAnotherHandler(e.Another, mux, decoder, encoder, errhandler, formatter),
-		Static:  http.FileServer(fileSystemStatic),
+		Index:               NewIndexHandler(e.Index, mux, decoder, encoder, errhandler, formatter),
+		Another:             NewAnotherHandler(e.Another, mux, decoder, encoder, errhandler, formatter),
+		LoginGoogle:         NewLoginGoogleHandler(e.LoginGoogle, mux, decoder, encoder, errhandler, formatter),
+		LoginGoogleCallback: NewLoginGoogleCallbackHandler(e.LoginGoogleCallback, mux, decoder, encoder, errhandler, formatter),
+		Logout:              NewLogoutHandler(e.Logout, mux, decoder, encoder, errhandler, formatter),
+		SessionToken:        NewSessionTokenHandler(e.SessionToken, mux, decoder, encoder, errhandler, formatter),
+		Static:              http.FileServer(fileSystemStatic),
 	}
 }
 
@@ -74,6 +86,10 @@ func (s *Server) Service() string { return "web" }
 func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.Index = m(s.Index)
 	s.Another = m(s.Another)
+	s.LoginGoogle = m(s.LoginGoogle)
+	s.LoginGoogleCallback = m(s.LoginGoogleCallback)
+	s.Logout = m(s.Logout)
+	s.SessionToken = m(s.SessionToken)
 }
 
 // MethodNames returns the methods served.
@@ -83,6 +99,10 @@ func (s *Server) MethodNames() []string { return web.MethodNames[:] }
 func Mount(mux goahttp.Muxer, h *Server) {
 	MountIndexHandler(mux, h.Index)
 	MountAnotherHandler(mux, h.Another)
+	MountLoginGoogleHandler(mux, h.LoginGoogle)
+	MountLoginGoogleCallbackHandler(mux, h.LoginGoogleCallback)
+	MountLogoutHandler(mux, h.Logout)
+	MountSessionTokenHandler(mux, h.SessionToken)
 	MountStatic(mux, http.StripPrefix("/static", h.Static))
 }
 
@@ -91,7 +111,7 @@ func (s *Server) Mount(mux goahttp.Muxer) {
 	Mount(mux, s)
 }
 
-// MountIndexHandler configures the mux to serve the "web" service "index"
+// MountIndexHandler configures the mux to serve the "web" service "Index"
 // endpoint.
 func MountIndexHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
@@ -104,7 +124,7 @@ func MountIndexHandler(mux goahttp.Muxer, h http.Handler) {
 }
 
 // NewIndexHandler creates a HTTP handler which loads the HTTP request and
-// calls the "web" service "index" endpoint.
+// calls the "web" service "Index" endpoint.
 func NewIndexHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
@@ -115,11 +135,11 @@ func NewIndexHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeIndexResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeIndexError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "index")
+		ctx = context.WithValue(ctx, goa.MethodKey, "Index")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "web")
 		var err error
 		res, err := endpoint(ctx, nil)
@@ -135,7 +155,7 @@ func NewIndexHandler(
 	})
 }
 
-// MountAnotherHandler configures the mux to serve the "web" service "another"
+// MountAnotherHandler configures the mux to serve the "web" service "Another"
 // endpoint.
 func MountAnotherHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
@@ -148,7 +168,7 @@ func MountAnotherHandler(mux goahttp.Muxer, h http.Handler) {
 }
 
 // NewAnotherHandler creates a HTTP handler which loads the HTTP request and
-// calls the "web" service "another" endpoint.
+// calls the "web" service "Another" endpoint.
 func NewAnotherHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
@@ -159,14 +179,211 @@ func NewAnotherHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeAnotherResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeAnotherError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "another")
+		ctx = context.WithValue(ctx, goa.MethodKey, "Another")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "web")
 		var err error
 		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountLoginGoogleHandler configures the mux to serve the "web" service
+// "LoginGoogle" endpoint.
+func MountLoginGoogleHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/login/google", f)
+}
+
+// NewLoginGoogleHandler creates a HTTP handler which loads the HTTP request
+// and calls the "web" service "LoginGoogle" endpoint.
+func NewLoginGoogleHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeLoginGoogleResponse(encoder)
+		encodeError    = EncodeLoginGoogleError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "LoginGoogle")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "web")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountLoginGoogleCallbackHandler configures the mux to serve the "web"
+// service "LoginGoogleCallback" endpoint.
+func MountLoginGoogleCallbackHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/login/google/callback", f)
+}
+
+// NewLoginGoogleCallbackHandler creates a HTTP handler which loads the HTTP
+// request and calls the "web" service "LoginGoogleCallback" endpoint.
+func NewLoginGoogleCallbackHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeLoginGoogleCallbackRequest(mux, decoder)
+		encodeResponse = EncodeLoginGoogleCallbackResponse(encoder)
+		encodeError    = EncodeLoginGoogleCallbackError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "LoginGoogleCallback")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "web")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountLogoutHandler configures the mux to serve the "web" service "Logout"
+// endpoint.
+func MountLogoutHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/logout", f)
+}
+
+// NewLogoutHandler creates a HTTP handler which loads the HTTP request and
+// calls the "web" service "Logout" endpoint.
+func NewLogoutHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeLogoutRequest(mux, decoder)
+		encodeResponse = EncodeLogoutResponse(encoder)
+		encodeError    = EncodeLogoutError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "Logout")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "web")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountSessionTokenHandler configures the mux to serve the "web" service
+// "SessionToken" endpoint.
+func MountSessionTokenHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/session/token", f)
+}
+
+// NewSessionTokenHandler creates a HTTP handler which loads the HTTP request
+// and calls the "web" service "SessionToken" endpoint.
+func NewSessionTokenHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeSessionTokenRequest(mux, decoder)
+		encodeResponse = EncodeSessionTokenResponse(encoder)
+		encodeError    = EncodeSessionTokenError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "SessionToken")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "web")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
 		if err != nil {
 			if err := encodeError(ctx, w, err); err != nil {
 				errhandler(ctx, w, err)
@@ -190,6 +407,8 @@ type appendFS struct {
 // passing it to the underlying fs.FS.
 func (s appendFS) Open(name string) (http.File, error) {
 	switch name {
+	case "/*":
+		name = "/static"
 	}
 	return s.fs.Open(path.Join(s.prefix, name))
 }
@@ -200,8 +419,7 @@ func appendPrefix(fsys http.FileSystem, prefix string) http.FileSystem {
 	return appendFS{prefix: prefix, fs: fsys}
 }
 
-// MountStatic configures the mux to serve GET request made to "/static".
+// MountStatic configures the mux to serve GET request made to "/static/*".
 func MountStatic(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/static/", h.ServeHTTP)
-	mux.Handle("GET", "/static/{*path}", h.ServeHTTP)
+	mux.Handle("GET", "/static/*", h.ServeHTTP)
 }

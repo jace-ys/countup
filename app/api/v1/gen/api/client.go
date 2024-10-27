@@ -15,18 +15,32 @@ import (
 
 // Client is the "api" service client.
 type Client struct {
+	AuthTokenEndpoint        goa.Endpoint
 	CounterGetEndpoint       goa.Endpoint
 	CounterIncrementEndpoint goa.Endpoint
-	EchoEndpoint             goa.Endpoint
 }
 
 // NewClient initializes a "api" service client given the endpoints.
-func NewClient(counterGet, counterIncrement, echo goa.Endpoint) *Client {
+func NewClient(authToken, counterGet, counterIncrement goa.Endpoint) *Client {
 	return &Client{
+		AuthTokenEndpoint:        authToken,
 		CounterGetEndpoint:       counterGet,
 		CounterIncrementEndpoint: counterIncrement,
-		EchoEndpoint:             echo,
 	}
+}
+
+// AuthToken calls the "AuthToken" endpoint of the "api" service.
+// AuthToken may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - "existing_increment_request" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) AuthToken(ctx context.Context, p *AuthTokenPayload) (res *AuthTokenResult, err error) {
+	var ires any
+	ires, err = c.AuthTokenEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*AuthTokenResult), nil
 }
 
 // CounterGet calls the "CounterGet" endpoint of the "api" service.
@@ -34,9 +48,9 @@ func NewClient(counterGet, counterIncrement, echo goa.Endpoint) *Client {
 //   - "unauthorized" (type *goa.ServiceError)
 //   - "existing_increment_request" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) CounterGet(ctx context.Context) (res *CounterInfo, err error) {
+func (c *Client) CounterGet(ctx context.Context, p *CounterGetPayload) (res *CounterInfo, err error) {
 	var ires any
-	ires, err = c.CounterGetEndpoint(ctx, nil)
+	ires, err = c.CounterGetEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
@@ -55,18 +69,4 @@ func (c *Client) CounterIncrement(ctx context.Context, p *CounterIncrementPayloa
 		return
 	}
 	return ires.(*CounterInfo), nil
-}
-
-// Echo calls the "Echo" endpoint of the "api" service.
-// Echo may return the following errors:
-//   - "unauthorized" (type *goa.ServiceError)
-//   - "existing_increment_request" (type *goa.ServiceError)
-//   - error: internal error
-func (c *Client) Echo(ctx context.Context, p *EchoPayload) (res *EchoResult, err error) {
-	var ires any
-	ires, err = c.EchoEndpoint(ctx, p)
-	if err != nil {
-		return
-	}
-	return ires.(*EchoResult), nil
 }

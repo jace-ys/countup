@@ -10,7 +10,7 @@ import (
 	"github.com/jace-ys/countup/internal/service/counter"
 )
 
-func (h *Handler) CounterGet(ctx context.Context) (*api.CounterInfo, error) {
+func (h *Handler) CounterGet(ctx context.Context, req *api.CounterGetPayload) (*api.CounterInfo, error) {
 	info, err := h.counter.GetInfo(ctx)
 	if err != nil {
 		return nil, goa.Fault("get counter info: %s", err)
@@ -26,11 +26,11 @@ func (h *Handler) CounterGet(ctx context.Context) (*api.CounterInfo, error) {
 
 func (h *Handler) CounterIncrement(ctx context.Context, req *api.CounterIncrementPayload) (*api.CounterInfo, error) {
 	if err := h.counter.RequestIncrement(ctx, req.User); err != nil {
-		var multipleRequestErr *counter.MultipleIncrementRequestError
+		var multipleIncrementRequestErr *counter.MultipleIncrementRequestError
 		switch {
-		case errors.As(err, &multipleRequestErr):
+		case errors.As(err, &multipleIncrementRequestErr):
 			return nil, api.MakeExistingIncrementRequest(
-				errors.New("user already made an increment request in the current finalize window, please try again after the next finalize time"),
+				errors.New("user already made an increment request in the recent finalize window, please try again after the next finalize time"),
 			)
 		default:
 			return nil, goa.Fault("request increment: %s", err)

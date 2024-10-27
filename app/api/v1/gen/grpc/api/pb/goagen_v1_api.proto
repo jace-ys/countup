@@ -13,12 +13,21 @@ option go_package = "/apipb";
 
 // Service is the api service interface.
 service API {
+	// AuthToken implements AuthToken.
+	rpc AuthToken (AuthTokenRequest) returns (AuthTokenResponse);
 	// CounterGet implements CounterGet.
 	rpc CounterGet (CounterGetRequest) returns (CounterGetResponse);
 	// CounterIncrement implements CounterIncrement.
 	rpc CounterIncrement (CounterIncrementRequest) returns (CounterIncrementResponse);
-	// Echo implements Echo.
-	rpc Echo (EchoRequest) returns (EchoResponse);
+}
+
+message AuthTokenRequest {
+	string provider = 1;
+	string access_token = 2;
+}
+
+message AuthTokenResponse {
+	string token = 1;
 }
 
 message CounterGetRequest {
@@ -32,7 +41,7 @@ message CounterGetResponse {
 }
 
 message CounterIncrementRequest {
-	string user = 1;
+	string user = 2;
 }
 
 message CounterIncrementResponse {
@@ -40,12 +49,4 @@ message CounterIncrementResponse {
 	string last_increment_by = 2;
 	string last_increment_at = 3;
 	string next_finalize_at = 4;
-}
-
-message EchoRequest {
-	string text = 1;
-}
-
-message EchoResponse {
-	string text = 1;
 }

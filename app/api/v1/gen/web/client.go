@@ -15,19 +15,30 @@ import (
 
 // Client is the "web" service client.
 type Client struct {
-	IndexEndpoint   goa.Endpoint
-	AnotherEndpoint goa.Endpoint
+	IndexEndpoint               goa.Endpoint
+	AnotherEndpoint             goa.Endpoint
+	LoginGoogleEndpoint         goa.Endpoint
+	LoginGoogleCallbackEndpoint goa.Endpoint
+	LogoutEndpoint              goa.Endpoint
+	SessionTokenEndpoint        goa.Endpoint
 }
 
 // NewClient initializes a "web" service client given the endpoints.
-func NewClient(index, another goa.Endpoint) *Client {
+func NewClient(index, another, loginGoogle, loginGoogleCallback, logout, sessionToken goa.Endpoint) *Client {
 	return &Client{
-		IndexEndpoint:   index,
-		AnotherEndpoint: another,
+		IndexEndpoint:               index,
+		AnotherEndpoint:             another,
+		LoginGoogleEndpoint:         loginGoogle,
+		LoginGoogleCallbackEndpoint: loginGoogleCallback,
+		LogoutEndpoint:              logout,
+		SessionTokenEndpoint:        sessionToken,
 	}
 }
 
-// Index calls the "index" endpoint of the "web" service.
+// Index calls the "Index" endpoint of the "web" service.
+// Index may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) Index(ctx context.Context) (res []byte, err error) {
 	var ires any
 	ires, err = c.IndexEndpoint(ctx, nil)
@@ -37,7 +48,10 @@ func (c *Client) Index(ctx context.Context) (res []byte, err error) {
 	return ires.([]byte), nil
 }
 
-// Another calls the "another" endpoint of the "web" service.
+// Another calls the "Another" endpoint of the "web" service.
+// Another may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) Another(ctx context.Context) (res []byte, err error) {
 	var ires any
 	ires, err = c.AnotherEndpoint(ctx, nil)
@@ -45,4 +59,57 @@ func (c *Client) Another(ctx context.Context) (res []byte, err error) {
 		return
 	}
 	return ires.([]byte), nil
+}
+
+// LoginGoogle calls the "LoginGoogle" endpoint of the "web" service.
+// LoginGoogle may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) LoginGoogle(ctx context.Context) (res *LoginGoogleResult, err error) {
+	var ires any
+	ires, err = c.LoginGoogleEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(*LoginGoogleResult), nil
+}
+
+// LoginGoogleCallback calls the "LoginGoogleCallback" endpoint of the "web"
+// service.
+// LoginGoogleCallback may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) LoginGoogleCallback(ctx context.Context, p *LoginGoogleCallbackPayload) (res *LoginGoogleCallbackResult, err error) {
+	var ires any
+	ires, err = c.LoginGoogleCallbackEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*LoginGoogleCallbackResult), nil
+}
+
+// Logout calls the "Logout" endpoint of the "web" service.
+// Logout may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) Logout(ctx context.Context, p *LogoutPayload) (res *LogoutResult, err error) {
+	var ires any
+	ires, err = c.LogoutEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*LogoutResult), nil
+}
+
+// SessionToken calls the "SessionToken" endpoint of the "web" service.
+// SessionToken may return the following errors:
+//   - "unauthorized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) SessionToken(ctx context.Context, p *SessionTokenPayload) (res *SessionTokenResult, err error) {
+	var ires any
+	ires, err = c.SessionTokenEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SessionTokenResult), nil
 }

@@ -31,16 +31,9 @@ WHERE id = 1;
 SELECT *
 FROM increment_requests;
 
--- name: InsertIncrementRequest :one
-WITH inserted AS (
-  INSERT INTO increment_requests (requested_by, requested_at)
-  VALUES ($1, $2)
-), existing AS (
-  SELECT COUNT(*) AS requests FROM increment_requests
-)
-SELECT
-  existing.requests AS existing_requests
-FROM existing;
+-- name: InsertIncrementRequest :exec
+INSERT INTO increment_requests (requested_by, requested_at)
+VALUES ($1, $2);
 
--- name: TruncateIncrementRequests :exec
+-- name: DeleteIncrementRequests :exec
 TRUNCATE TABLE increment_requests;

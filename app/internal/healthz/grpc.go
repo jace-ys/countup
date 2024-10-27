@@ -12,7 +12,7 @@ import (
 
 func GRPCCheck(name, target string) health.Check {
 	return health.Check{
-		Name: fmt.Sprintf("grpc:%s", name),
+		Name: "grpc:" + name,
 		Check: func(ctx context.Context) error {
 			opts := []grpc.DialOption{
 				grpc.WithTransportCredentials(insecure.NewCredentials()),

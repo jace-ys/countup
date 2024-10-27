@@ -9,7 +9,7 @@ import (
 	"github.com/riverqueue/river/rivermigrate"
 )
 
-var rivermigrator *rivermigrate.Migrator[pgx.Tx]
+var riverMigrate *rivermigrate.Migrator[pgx.Tx]
 
 func WithRiverMigrate(db *pgxpool.Pool) error {
 	migrator, err := rivermigrate.New(riverpgxv5.New(db), &rivermigrate.Config{})
@@ -17,6 +17,6 @@ func WithRiverMigrate(db *pgxpool.Pool) error {
 		return fmt.Errorf("init river migrator: %w", err)
 	}
 
-	rivermigrator = migrator
+	riverMigrate = migrator
 	return nil
 }

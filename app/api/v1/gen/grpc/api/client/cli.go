@@ -15,41 +15,61 @@ import (
 	apipb "github.com/jace-ys/countup/api/v1/gen/grpc/api/pb"
 )
 
+// BuildAuthTokenPayload builds the payload for the api AuthToken endpoint from
+// CLI flags.
+func BuildAuthTokenPayload(apiAuthTokenMessage string) (*api.AuthTokenPayload, error) {
+	var err error
+	var message apipb.AuthTokenRequest
+	{
+		if apiAuthTokenMessage != "" {
+			err = json.Unmarshal([]byte(apiAuthTokenMessage), &message)
+			if err != nil {
+				return nil, fmt.Errorf("invalid JSON for message, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"access_token\": \"Et eum.\",\n      \"provider\": \"google\"\n   }'")
+			}
+		}
+	}
+	v := &api.AuthTokenPayload{
+		Provider:    message.Provider,
+		AccessToken: message.AccessToken,
+	}
+
+	return v, nil
+}
+
+// BuildCounterGetPayload builds the payload for the api CounterGet endpoint
+// from CLI flags.
+func BuildCounterGetPayload(apiCounterGetToken string) (*api.CounterGetPayload, error) {
+	var token string
+	{
+		token = apiCounterGetToken
+	}
+	v := &api.CounterGetPayload{}
+	v.Token = token
+
+	return v, nil
+}
+
 // BuildCounterIncrementPayload builds the payload for the api CounterIncrement
 // endpoint from CLI flags.
-func BuildCounterIncrementPayload(apiCounterIncrementMessage string) (*api.CounterIncrementPayload, error) {
+func BuildCounterIncrementPayload(apiCounterIncrementMessage string, apiCounterIncrementToken string) (*api.CounterIncrementPayload, error) {
 	var err error
 	var message apipb.CounterIncrementRequest
 	{
 		if apiCounterIncrementMessage != "" {
 			err = json.Unmarshal([]byte(apiCounterIncrementMessage), &message)
 			if err != nil {
-				return nil, fmt.Errorf("invalid JSON for message, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"user\": \"Non accusantium eos culpa autem illum architecto.\"\n   }'")
+				return nil, fmt.Errorf("invalid JSON for message, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"user\": \"Voluptates voluptas eius cumque maxime dolore.\"\n   }'")
 			}
 		}
+	}
+	var token string
+	{
+		token = apiCounterIncrementToken
 	}
 	v := &api.CounterIncrementPayload{
 		User: message.User,
 	}
-
-	return v, nil
-}
-
-// BuildEchoPayload builds the payload for the api Echo endpoint from CLI flags.
-func BuildEchoPayload(apiEchoMessage string) (*api.EchoPayload, error) {
-	var err error
-	var message apipb.EchoRequest
-	{
-		if apiEchoMessage != "" {
-			err = json.Unmarshal([]byte(apiEchoMessage), &message)
-			if err != nil {
-				return nil, fmt.Errorf("invalid JSON for message, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"text\": \"Cupiditate tempore harum error iste ipsam natus.\"\n   }'")
-			}
-		}
-	}
-	v := &api.EchoPayload{
-		Text: message.Text,
-	}
+	v.Token = token
 
 	return v, nil
 }

@@ -13,14 +13,14 @@ func init() {
 }
 
 func upRiverMigrate005(ctx context.Context, tx *sql.Tx) error {
-	_, err := rivermigrator.Migrate(ctx, rivermigrate.DirectionUp, &rivermigrate.MigrateOpts{
+	_, err := riverMigrate.Migrate(ctx, rivermigrate.DirectionUp, &rivermigrate.MigrateOpts{
 		TargetVersion: 5,
 	})
 	return err
 }
 
 func downRiverMigrate005(ctx context.Context, tx *sql.Tx) error {
-	_, err := rivermigrator.Migrate(ctx, rivermigrate.DirectionDown, &rivermigrate.MigrateOpts{
+	_, err := riverMigrate.Migrate(ctx, rivermigrate.DirectionDown, &rivermigrate.MigrateOpts{
 		TargetVersion: 4,
 	})
 	return err

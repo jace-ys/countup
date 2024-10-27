@@ -3,7 +3,6 @@ package slog
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"goa.design/clue/log"
@@ -57,7 +56,8 @@ func (l *StdSlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	kvs := make([]log.Fielder, len(attrs))
 	for i, attr := range attrs {
 		if l.group != "" {
-			kvs[i] = KV(fmt.Sprintf("%s.%s", l.group, attr.Key), attr.Value.Any())
+			k := l.group + "." + attr.Key
+			kvs[i] = KV(k, attr.Value.Any())
 		} else {
 			kvs[i] = KV(attr.Key, attr.Value.Any())
 		}

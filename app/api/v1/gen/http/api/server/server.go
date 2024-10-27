@@ -20,9 +20,9 @@ import (
 // Server lists the api service endpoint HTTP handlers.
 type Server struct {
 	Mounts              []*MountPoint
+	AuthToken           http.Handler
 	CounterGet          http.Handler
 	CounterIncrement    http.Handler
-	Echo                http.Handler
 	GenHTTPOpenapi3JSON http.Handler
 }
 
@@ -58,14 +58,14 @@ func New(
 	fileSystemGenHTTPOpenapi3JSON = appendPrefix(fileSystemGenHTTPOpenapi3JSON, "/gen/http")
 	return &Server{
 		Mounts: []*MountPoint{
-			{"CounterGet", "GET", "/counter"},
-			{"CounterIncrement", "POST", "/counter/inc"},
-			{"Echo", "POST", "/echo"},
-			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
+			{"AuthToken", "POST", "/api/v1/auth/token"},
+			{"CounterGet", "GET", "/api/v1/counter"},
+			{"CounterIncrement", "POST", "/api/v1/counter"},
+			{"Serve gen/http/openapi3.json", "GET", "/api/v1/openapi.json"},
 		},
+		AuthToken:           NewAuthTokenHandler(e.AuthToken, mux, decoder, encoder, errhandler, formatter),
 		CounterGet:          NewCounterGetHandler(e.CounterGet, mux, decoder, encoder, errhandler, formatter),
 		CounterIncrement:    NewCounterIncrementHandler(e.CounterIncrement, mux, decoder, encoder, errhandler, formatter),
-		Echo:                NewEchoHandler(e.Echo, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
@@ -75,9 +75,9 @@ func (s *Server) Service() string { return "api" }
 
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
+	s.AuthToken = m(s.AuthToken)
 	s.CounterGet = m(s.CounterGet)
 	s.CounterIncrement = m(s.CounterIncrement)
-	s.Echo = m(s.Echo)
 }
 
 // MethodNames returns the methods served.
@@ -85,10 +85,10 @@ func (s *Server) MethodNames() []string { return api.MethodNames[:] }
 
 // Mount configures the mux to serve the api endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
+	MountAuthTokenHandler(mux, h.AuthToken)
 	MountCounterGetHandler(mux, h.CounterGet)
 	MountCounterIncrementHandler(mux, h.CounterIncrement)
-	MountEchoHandler(mux, h.Echo)
-	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
+	MountGenHTTPOpenapi3JSON(mux, http.StripPrefix("/api/v1", h.GenHTTPOpenapi3JSON))
 }
 
 // Mount configures the mux to serve the api endpoints.
@@ -96,21 +96,21 @@ func (s *Server) Mount(mux goahttp.Muxer) {
 	Mount(mux, s)
 }
 
-// MountCounterGetHandler configures the mux to serve the "api" service
-// "CounterGet" endpoint.
-func MountCounterGetHandler(mux goahttp.Muxer, h http.Handler) {
+// MountAuthTokenHandler configures the mux to serve the "api" service
+// "AuthToken" endpoint.
+func MountAuthTokenHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/counter", f)
+	mux.Handle("POST", "/api/v1/auth/token", f)
 }
 
-// NewCounterGetHandler creates a HTTP handler which loads the HTTP request and
-// calls the "api" service "CounterGet" endpoint.
-func NewCounterGetHandler(
+// NewAuthTokenHandler creates a HTTP handler which loads the HTTP request and
+// calls the "api" service "AuthToken" endpoint.
+func NewAuthTokenHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -119,57 +119,13 @@ func NewCounterGetHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		encodeResponse = EncodeCounterGetResponse(encoder)
-		encodeError    = EncodeCounterGetError(encoder, formatter)
+		decodeRequest  = DecodeAuthTokenRequest(mux, decoder)
+		encodeResponse = EncodeAuthTokenResponse(encoder)
+		encodeError    = EncodeAuthTokenError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "CounterGet")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "api")
-		var err error
-		res, err := endpoint(ctx, nil)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			errhandler(ctx, w, err)
-		}
-	})
-}
-
-// MountCounterIncrementHandler configures the mux to serve the "api" service
-// "CounterIncrement" endpoint.
-func MountCounterIncrementHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("POST", "/counter/inc", f)
-}
-
-// NewCounterIncrementHandler creates a HTTP handler which loads the HTTP
-// request and calls the "api" service "CounterIncrement" endpoint.
-func NewCounterIncrementHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeCounterIncrementRequest(mux, decoder)
-		encodeResponse = EncodeCounterIncrementResponse(encoder)
-		encodeError    = EncodeCounterIncrementError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "CounterIncrement")
+		ctx = context.WithValue(ctx, goa.MethodKey, "AuthToken")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "api")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -191,21 +147,21 @@ func NewCounterIncrementHandler(
 	})
 }
 
-// MountEchoHandler configures the mux to serve the "api" service "Echo"
-// endpoint.
-func MountEchoHandler(mux goahttp.Muxer, h http.Handler) {
+// MountCounterGetHandler configures the mux to serve the "api" service
+// "CounterGet" endpoint.
+func MountCounterGetHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/echo", f)
+	mux.Handle("GET", "/api/v1/counter", f)
 }
 
-// NewEchoHandler creates a HTTP handler which loads the HTTP request and calls
-// the "api" service "Echo" endpoint.
-func NewEchoHandler(
+// NewCounterGetHandler creates a HTTP handler which loads the HTTP request and
+// calls the "api" service "CounterGet" endpoint.
+func NewCounterGetHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -214,13 +170,64 @@ func NewEchoHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeEchoRequest(mux, decoder)
-		encodeResponse = EncodeEchoResponse(encoder)
-		encodeError    = EncodeEchoError(encoder, formatter)
+		decodeRequest  = DecodeCounterGetRequest(mux, decoder)
+		encodeResponse = EncodeCounterGetResponse(encoder)
+		encodeError    = EncodeCounterGetError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "Echo")
+		ctx = context.WithValue(ctx, goa.MethodKey, "CounterGet")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "api")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountCounterIncrementHandler configures the mux to serve the "api" service
+// "CounterIncrement" endpoint.
+func MountCounterIncrementHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/api/v1/counter", f)
+}
+
+// NewCounterIncrementHandler creates a HTTP handler which loads the HTTP
+// request and calls the "api" service "CounterIncrement" endpoint.
+func NewCounterIncrementHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeCounterIncrementRequest(mux, decoder)
+		encodeResponse = EncodeCounterIncrementResponse(encoder)
+		encodeError    = EncodeCounterIncrementError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "CounterIncrement")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "api")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -266,7 +273,7 @@ func appendPrefix(fsys http.FileSystem, prefix string) http.FileSystem {
 }
 
 // MountGenHTTPOpenapi3JSON configures the mux to serve GET request made to
-// "/openapi.json".
+// "/api/v1/openapi.json".
 func MountGenHTTPOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
+	mux.Handle("GET", "/api/v1/openapi.json", h.ServeHTTP)
 }

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
+	"goa.design/goa/v3/http/middleware"
 
 	"github.com/jace-ys/countup/internal/healthz"
 	"github.com/jace-ys/countup/internal/slog"
@@ -42,11 +43,8 @@ func NewHTTPServer(ctx context.Context, name string, port int) *HTTPServer {
 }
 
 func (s *HTTPServer) RegisterHandler(path string, h http.Handler) {
-	if path == "/" {
-		s.mux.Mount(path, h)
-	} else {
-		s.mux.Mount(path, http.StripPrefix(path, h))
-	}
+	pattern := path + "*"
+	s.mux.Handle(pattern, h)
 }
 
 var _ Server = (*HTTPServer)(nil)
@@ -82,6 +80,7 @@ func (s *HTTPServer) router(ctx context.Context) http.Handler {
 	return chainMiddleware(s.mux,
 		withPathFilter(telemetry.HTTP(attribute.String("http.server.name", s.Name())), excludedPaths),
 		recovery.HTTP(logCtx),
+		withPathFilter(middleware.PopulateRequestContext(), excludedPaths),
 		withPathFilter(idgen.HTTP(), excludedPaths),
 		withPathFilter(slog.HTTP(logCtx), excludedPaths),
 		withPathFilter(debug.HTTP(), excludedPaths),

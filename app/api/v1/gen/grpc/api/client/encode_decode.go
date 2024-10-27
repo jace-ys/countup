@@ -18,7 +18,38 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// BuildCounterGetFunc builds the remote method to invoke for "api" service
+// BuildAuthTokenFunc builds the remote method to invoke for "api" service
+// "AuthToken" endpoint.
+func BuildAuthTokenFunc(grpccli apipb.APIClient, cliopts ...grpc.CallOption) goagrpc.RemoteFunc {
+	return func(ctx context.Context, reqpb any, opts ...grpc.CallOption) (any, error) {
+		for _, opt := range cliopts {
+			opts = append(opts, opt)
+		}
+		if reqpb != nil {
+			return grpccli.AuthToken(ctx, reqpb.(*apipb.AuthTokenRequest), opts...)
+		}
+		return grpccli.AuthToken(ctx, &apipb.AuthTokenRequest{}, opts...)
+	}
+}
+
+// EncodeAuthTokenRequest encodes requests sent to api AuthToken endpoint.
+func EncodeAuthTokenRequest(ctx context.Context, v any, md *metadata.MD) (any, error) {
+	payload, ok := v.(*api.AuthTokenPayload)
+	if !ok {
+		return nil, goagrpc.ErrInvalidType("api", "AuthToken", "*api.AuthTokenPayload", v)
+	}
+	return NewProtoAuthTokenRequest(payload), nil
+}
+
+// DecodeAuthTokenResponse decodes responses from the api AuthToken endpoint.
+func DecodeAuthTokenResponse(ctx context.Context, v any, hdr, trlr metadata.MD) (any, error) {
+	message, ok := v.(*apipb.AuthTokenResponse)
+	if !ok {
+		return nil, goagrpc.ErrInvalidType("api", "AuthToken", "*apipb.AuthTokenResponse", v)
+	}
+	res := NewAuthTokenResult(message)
+	return res, nil
+} // BuildCounterGetFunc builds the remote method to invoke for "api" service
 // "CounterGet" endpoint.
 func BuildCounterGetFunc(grpccli apipb.APIClient, cliopts ...grpc.CallOption) goagrpc.RemoteFunc {
 	return func(ctx context.Context, reqpb any, opts ...grpc.CallOption) (any, error) {
@@ -30,6 +61,16 @@ func BuildCounterGetFunc(grpccli apipb.APIClient, cliopts ...grpc.CallOption) go
 		}
 		return grpccli.CounterGet(ctx, &apipb.CounterGetRequest{}, opts...)
 	}
+}
+
+// EncodeCounterGetRequest encodes requests sent to api CounterGet endpoint.
+func EncodeCounterGetRequest(ctx context.Context, v any, md *metadata.MD) (any, error) {
+	payload, ok := v.(*api.CounterGetPayload)
+	if !ok {
+		return nil, goagrpc.ErrInvalidType("api", "CounterGet", "*api.CounterGetPayload", v)
+	}
+	(*md).Append("authorization", payload.Token)
+	return NewProtoCounterGetRequest(), nil
 }
 
 // DecodeCounterGetResponse decodes responses from the api CounterGet endpoint.
@@ -71,6 +112,7 @@ func EncodeCounterIncrementRequest(ctx context.Context, v any, md *metadata.MD) 
 	if !ok {
 		return nil, goagrpc.ErrInvalidType("api", "CounterIncrement", "*api.CounterIncrementPayload", v)
 	}
+	(*md).Append("authorization", payload.Token)
 	return NewProtoCounterIncrementRequest(payload), nil
 }
 
@@ -93,35 +135,4 @@ func DecodeCounterIncrementResponse(ctx context.Context, v any, hdr, trlr metada
 		return nil, err
 	}
 	return api.NewCounterInfo(vres), nil
-} // BuildEchoFunc builds the remote method to invoke for "api" service "Echo"
-// endpoint.
-func BuildEchoFunc(grpccli apipb.APIClient, cliopts ...grpc.CallOption) goagrpc.RemoteFunc {
-	return func(ctx context.Context, reqpb any, opts ...grpc.CallOption) (any, error) {
-		for _, opt := range cliopts {
-			opts = append(opts, opt)
-		}
-		if reqpb != nil {
-			return grpccli.Echo(ctx, reqpb.(*apipb.EchoRequest), opts...)
-		}
-		return grpccli.Echo(ctx, &apipb.EchoRequest{}, opts...)
-	}
-}
-
-// EncodeEchoRequest encodes requests sent to api Echo endpoint.
-func EncodeEchoRequest(ctx context.Context, v any, md *metadata.MD) (any, error) {
-	payload, ok := v.(*api.EchoPayload)
-	if !ok {
-		return nil, goagrpc.ErrInvalidType("api", "Echo", "*api.EchoPayload", v)
-	}
-	return NewProtoEchoRequest(payload), nil
-}
-
-// DecodeEchoResponse decodes responses from the api Echo endpoint.
-func DecodeEchoResponse(ctx context.Context, v any, hdr, trlr metadata.MD) (any, error) {
-	message, ok := v.(*apipb.EchoResponse)
-	if !ok {
-		return nil, goagrpc.ErrInvalidType("api", "Echo", "*apipb.EchoResponse", v)
-	}
-	res := NewEchoResult(message)
-	return res, nil
 }

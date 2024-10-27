@@ -7,17 +7,17 @@
 
 package client
 
+// AuthTokenAPIPath returns the URL path to the api service AuthToken HTTP endpoint.
+func AuthTokenAPIPath() string {
+	return "/api/v1/auth/token"
+}
+
 // CounterGetAPIPath returns the URL path to the api service CounterGet HTTP endpoint.
 func CounterGetAPIPath() string {
-	return "/counter"
+	return "/api/v1/counter"
 }
 
 // CounterIncrementAPIPath returns the URL path to the api service CounterIncrement HTTP endpoint.
 func CounterIncrementAPIPath() string {
-	return "/counter/inc"
-}
-
-// EchoAPIPath returns the URL path to the api service Echo HTTP endpoint.
-func EchoAPIPath() string {
-	return "/echo"
+	return "/api/v1/counter"
 }

@@ -153,7 +153,7 @@ func (m *instrumentedJobInsertMiddleware) emitEnqueuedTelemetry(ctx context.Cont
 		),
 	)
 
-	attrset := attribute.NewSet(attrs...)
-	m.metrics.jobsEnqueuedTotal.Add(ctx, 1, metric.WithAttributeSet(attrset))
-	m.metrics.jobsAvailableCount.Add(ctx, 1, metric.WithAttributeSet(attrset))
+	set := attribute.NewSet(attrs...)
+	m.metrics.jobsEnqueuedTotal.Add(ctx, 1, metric.WithAttributeSet(set))
+	m.metrics.jobsAvailableCount.Add(ctx, 1, metric.WithAttributeSet(set))
 }

@@ -11,7 +11,35 @@ import (
 	api "github.com/jace-ys/countup/api/v1/gen/api"
 	apiviews "github.com/jace-ys/countup/api/v1/gen/api/views"
 	apipb "github.com/jace-ys/countup/api/v1/gen/grpc/api/pb"
+	goa "goa.design/goa/v3/pkg"
 )
+
+// NewAuthTokenPayload builds the payload of the "AuthToken" endpoint of the
+// "api" service from the gRPC request type.
+func NewAuthTokenPayload(message *apipb.AuthTokenRequest) *api.AuthTokenPayload {
+	v := &api.AuthTokenPayload{
+		Provider:    message.Provider,
+		AccessToken: message.AccessToken,
+	}
+	return v
+}
+
+// NewProtoAuthTokenResponse builds the gRPC response type from the result of
+// the "AuthToken" endpoint of the "api" service.
+func NewProtoAuthTokenResponse(result *api.AuthTokenResult) *apipb.AuthTokenResponse {
+	message := &apipb.AuthTokenResponse{
+		Token: result.Token,
+	}
+	return message
+}
+
+// NewCounterGetPayload builds the payload of the "CounterGet" endpoint of the
+// "api" service from the gRPC request type.
+func NewCounterGetPayload(token string) *api.CounterGetPayload {
+	v := &api.CounterGetPayload{}
+	v.Token = token
+	return v
+}
 
 // NewProtoCounterGetResponse builds the gRPC response type from the result of
 // the "CounterGet" endpoint of the "api" service.
@@ -27,10 +55,11 @@ func NewProtoCounterGetResponse(result *apiviews.CounterInfoView) *apipb.Counter
 
 // NewCounterIncrementPayload builds the payload of the "CounterIncrement"
 // endpoint of the "api" service from the gRPC request type.
-func NewCounterIncrementPayload(message *apipb.CounterIncrementRequest) *api.CounterIncrementPayload {
+func NewCounterIncrementPayload(message *apipb.CounterIncrementRequest, token string) *api.CounterIncrementPayload {
 	v := &api.CounterIncrementPayload{
 		User: message.User,
 	}
+	v.Token = token
 	return v
 }
 
@@ -46,20 +75,10 @@ func NewProtoCounterIncrementResponse(result *apiviews.CounterInfoView) *apipb.C
 	return message
 }
 
-// NewEchoPayload builds the payload of the "Echo" endpoint of the "api"
-// service from the gRPC request type.
-func NewEchoPayload(message *apipb.EchoRequest) *api.EchoPayload {
-	v := &api.EchoPayload{
-		Text: message.Text,
+// ValidateAuthTokenRequest runs the validations defined on AuthTokenRequest.
+func ValidateAuthTokenRequest(message *apipb.AuthTokenRequest) (err error) {
+	if !(message.Provider == "google") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("message.provider", message.Provider, []any{"google"}))
 	}
-	return v
-}
-
-// NewProtoEchoResponse builds the gRPC response type from the result of the
-// "Echo" endpoint of the "api" service.
-func NewProtoEchoResponse(result *api.EchoResult) *apipb.EchoResponse {
-	message := &apipb.EchoResponse{
-		Text: result.Text,
-	}
-	return message
+	return
 }

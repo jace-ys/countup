@@ -23,13 +23,13 @@ import (
 	"github.com/jace-ys/countup/internal/transport/middleware/recovery"
 )
 
-type GRPCServer[SS any] struct {
+type GRPCServer struct {
 	name string
 	addr string
 	srv  *grpc.Server
 }
 
-func NewGRPCServer[SS any](ctx context.Context, name string, port int) *GRPCServer[SS] {
+func NewGRPCServer[SS any](ctx context.Context, name string, port int) *GRPCServer {
 	addr := fmt.Sprintf(":%d", port)
 
 	excludedMethods := map[string]bool{
@@ -58,7 +58,7 @@ func NewGRPCServer[SS any](ctx context.Context, name string, port int) *GRPCServ
 	reflection.Register(srv)
 	healthpb.RegisterHealthServer(srv, healthz.NewGRPCHandler())
 
-	return &GRPCServer[SS]{
+	return &GRPCServer{
 		name: name,
 		addr: addr,
 		srv:  srv,
@@ -74,25 +74,25 @@ func withMethodFilter(interceptor grpc.UnaryServerInterceptor, excluded map[stri
 	}
 }
 
-func (s *GRPCServer[SS]) RegisterHandler(sd *grpc.ServiceDesc, ss SS) {
+func (s *GRPCServer) RegisterHandler(sd *grpc.ServiceDesc, ss any) {
 	s.srv.RegisterService(sd, ss)
 }
 
-var _ Server = (*GRPCServer[any])(nil)
+var _ Server = (*GRPCServer)(nil)
 
-func (s *GRPCServer[SS]) Name() string {
+func (s *GRPCServer) Name() string {
 	return s.name
 }
 
-func (s *GRPCServer[SS]) Kind() string {
+func (s *GRPCServer) Kind() string {
 	return "grpc"
 }
 
-func (s *GRPCServer[SS]) Addr() string {
+func (s *GRPCServer) Addr() string {
 	return s.addr
 }
 
-func (s *GRPCServer[SS]) Serve(ctx context.Context) error {
+func (s *GRPCServer) Serve(ctx context.Context) error {
 	lis, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("tcp listener: %w", err)
@@ -105,7 +105,7 @@ func (s *GRPCServer[SS]) Serve(ctx context.Context) error {
 	return nil
 }
 
-func (s *GRPCServer[SS]) Shutdown(ctx context.Context) error {
+func (s *GRPCServer) Shutdown(ctx context.Context) error {
 	ok := make(chan struct{})
 
 	go func() {
@@ -122,9 +122,9 @@ func (s *GRPCServer[SS]) Shutdown(ctx context.Context) error {
 	}
 }
 
-var _ healthz.Target = (*GRPCServer[any])(nil)
+var _ healthz.Target = (*GRPCServer)(nil)
 
-func (s *GRPCServer[SS]) HealthChecks() []health.Check {
+func (s *GRPCServer) HealthChecks() []health.Check {
 	return []health.Check{
 		healthz.GRPCCheck(s.Name(), s.Addr()),
 	}

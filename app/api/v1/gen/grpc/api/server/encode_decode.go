@@ -9,13 +9,48 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	api "github.com/jace-ys/countup/api/v1/gen/api"
 	apiviews "github.com/jace-ys/countup/api/v1/gen/api/views"
 	apipb "github.com/jace-ys/countup/api/v1/gen/grpc/api/pb"
 	goagrpc "goa.design/goa/v3/grpc"
+	goa "goa.design/goa/v3/pkg"
 	"google.golang.org/grpc/metadata"
 )
+
+// EncodeAuthTokenResponse encodes responses from the "api" service "AuthToken"
+// endpoint.
+func EncodeAuthTokenResponse(ctx context.Context, v any, hdr, trlr *metadata.MD) (any, error) {
+	result, ok := v.(*api.AuthTokenResult)
+	if !ok {
+		return nil, goagrpc.ErrInvalidType("api", "AuthToken", "*api.AuthTokenResult", v)
+	}
+	resp := NewProtoAuthTokenResponse(result)
+	return resp, nil
+}
+
+// DecodeAuthTokenRequest decodes requests sent to "api" service "AuthToken"
+// endpoint.
+func DecodeAuthTokenRequest(ctx context.Context, v any, md metadata.MD) (any, error) {
+	var (
+		message *apipb.AuthTokenRequest
+		ok      bool
+	)
+	{
+		if message, ok = v.(*apipb.AuthTokenRequest); !ok {
+			return nil, goagrpc.ErrInvalidType("api", "AuthToken", "*apipb.AuthTokenRequest", v)
+		}
+		if err := ValidateAuthTokenRequest(message); err != nil {
+			return nil, err
+		}
+	}
+	var payload *api.AuthTokenPayload
+	{
+		payload = NewAuthTokenPayload(message)
+	}
+	return payload, nil
+}
 
 // EncodeCounterGetResponse encodes responses from the "api" service
 // "CounterGet" endpoint.
@@ -28,6 +63,35 @@ func EncodeCounterGetResponse(ctx context.Context, v any, hdr, trlr *metadata.MD
 	(*hdr).Append("goa-view", vres.View)
 	resp := NewProtoCounterGetResponse(result)
 	return resp, nil
+}
+
+// DecodeCounterGetRequest decodes requests sent to "api" service "CounterGet"
+// endpoint.
+func DecodeCounterGetRequest(ctx context.Context, v any, md metadata.MD) (any, error) {
+	var (
+		token string
+		err   error
+	)
+	{
+		if vals := md.Get("authorization"); len(vals) == 0 {
+			err = goa.MergeErrors(err, goa.MissingFieldError("authorization", "metadata"))
+		} else {
+			token = vals[0]
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	var payload *api.CounterGetPayload
+	{
+		payload = NewCounterGetPayload(token)
+		if strings.Contains(payload.Token, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.Token, " ", 2)[1]
+			payload.Token = cred
+		}
+	}
+	return payload, nil
 }
 
 // EncodeCounterIncrementResponse encodes responses from the "api" service
@@ -47,6 +111,20 @@ func EncodeCounterIncrementResponse(ctx context.Context, v any, hdr, trlr *metad
 // "CounterIncrement" endpoint.
 func DecodeCounterIncrementRequest(ctx context.Context, v any, md metadata.MD) (any, error) {
 	var (
+		token string
+		err   error
+	)
+	{
+		if vals := md.Get("authorization"); len(vals) == 0 {
+			err = goa.MergeErrors(err, goa.MissingFieldError("authorization", "metadata"))
+		} else {
+			token = vals[0]
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	var (
 		message *apipb.CounterIncrementRequest
 		ok      bool
 	)
@@ -57,35 +135,12 @@ func DecodeCounterIncrementRequest(ctx context.Context, v any, md metadata.MD) (
 	}
 	var payload *api.CounterIncrementPayload
 	{
-		payload = NewCounterIncrementPayload(message)
-	}
-	return payload, nil
-}
-
-// EncodeEchoResponse encodes responses from the "api" service "Echo" endpoint.
-func EncodeEchoResponse(ctx context.Context, v any, hdr, trlr *metadata.MD) (any, error) {
-	result, ok := v.(*api.EchoResult)
-	if !ok {
-		return nil, goagrpc.ErrInvalidType("api", "Echo", "*api.EchoResult", v)
-	}
-	resp := NewProtoEchoResponse(result)
-	return resp, nil
-}
-
-// DecodeEchoRequest decodes requests sent to "api" service "Echo" endpoint.
-func DecodeEchoRequest(ctx context.Context, v any, md metadata.MD) (any, error) {
-	var (
-		message *apipb.EchoRequest
-		ok      bool
-	)
-	{
-		if message, ok = v.(*apipb.EchoRequest); !ok {
-			return nil, goagrpc.ErrInvalidType("api", "Echo", "*apipb.EchoRequest", v)
+		payload = NewCounterIncrementPayload(message, token)
+		if strings.Contains(payload.Token, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.Token, " ", 2)[1]
+			payload.Token = cred
 		}
-	}
-	var payload *api.EchoPayload
-	{
-		payload = NewEchoPayload(message)
 	}
 	return payload, nil
 }

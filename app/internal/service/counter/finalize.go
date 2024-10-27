@@ -36,11 +36,15 @@ func NewIncrementWorker(db *pgxpool.Pool, store counterstore.Querier) *FinalizeI
 }
 
 func (w *FinalizeIncrementWorker) Work(ctx context.Context, job *river.Job[FinalizeIncrementJobArgs]) error {
+	ctx = slog.With(ctx, slog.KV("finalize.window", job.Args.FinalizeWindow))
+
 	tx, err := w.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%w: tx begin: %w", ErrDBConn, err)
 	}
 	defer tx.Rollback(ctx)
+
+	slog.Info(ctx, "listing increment requests")
 
 	requests, err := w.store.ListIncrementRequests(ctx, tx)
 	if err != nil {
@@ -56,7 +60,6 @@ func (w *FinalizeIncrementWorker) Work(ctx context.Context, job *river.Job[Final
 
 	case 1:
 		slog.Info(ctx, "only one increment request in finalize window, incrementing counter",
-			slog.KV("finalize.window", job.Args.FinalizeWindow),
 			slog.KV("finalize.user", requests[0].RequestedBy),
 		)
 
@@ -76,7 +79,6 @@ func (w *FinalizeIncrementWorker) Work(ctx context.Context, job *river.Job[Final
 	default:
 		slog.Info(ctx, "multiple increment requests in finalize window, resetting counter",
 			slog.KV("requests.count", len(requests)),
-			slog.KV("finalize.window", job.Args.FinalizeWindow),
 			slog.KV("finalize.user", requests[0].RequestedBy),
 		)
 
@@ -85,9 +87,9 @@ func (w *FinalizeIncrementWorker) Work(ctx context.Context, job *river.Job[Final
 		}
 	}
 
-	slog.Info(ctx, "truncating increment requests table")
+	slog.Info(ctx, "deleting increment requests")
 
-	if err := w.store.TruncateIncrementRequests(ctx, tx); err != nil {
+	if err := w.store.DeleteIncrementRequests(ctx, tx); err != nil {
 		return fmt.Errorf("%w: %w", ErrTruncateIncrementRequests, err)
 	}
 

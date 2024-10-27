@@ -4,17 +4,17 @@ import (
 	"context"
 
 	"github.com/alexliesenfeld/health"
+	"github.com/markbates/goth"
 
 	"github.com/jace-ys/countup/api/v1/gen/api"
 	"github.com/jace-ys/countup/internal/healthz"
 	"github.com/jace-ys/countup/internal/service/counter"
-	"github.com/jace-ys/countup/internal/worker"
 )
 
 var _ api.Service = (*Handler)(nil)
 
 type Handler struct {
-	workers *worker.Pool
+	authn   goth.Provider
 	counter CounterService
 }
 
@@ -23,11 +23,9 @@ type CounterService interface {
 	RequestIncrement(ctx context.Context, user string) error
 }
 
-func NewHandler(workers *worker.Pool, counter CounterService) (*Handler, error) {
-	worker.Register(workers, &EchoWorker{})
-
+func NewHandler(authn goth.Provider, counter CounterService) (*Handler, error) {
 	return &Handler{
-		workers: workers,
+		authn:   authn,
 		counter: counter,
 	}, nil
 }

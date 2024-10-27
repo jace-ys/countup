@@ -12,16 +12,23 @@ import (
 
 	apiviews "github.com/jace-ys/countup/api/v1/gen/api/views"
 	goa "goa.design/goa/v3/pkg"
+	"goa.design/goa/v3/security"
 )
 
 // Service is the api service interface.
 type Service interface {
+	// AuthToken implements AuthToken.
+	AuthToken(context.Context, *AuthTokenPayload) (res *AuthTokenResult, err error)
 	// CounterGet implements CounterGet.
-	CounterGet(context.Context) (res *CounterInfo, err error)
+	CounterGet(context.Context, *CounterGetPayload) (res *CounterInfo, err error)
 	// CounterIncrement implements CounterIncrement.
 	CounterIncrement(context.Context, *CounterIncrementPayload) (res *CounterInfo, err error)
-	// Echo implements Echo.
-	Echo(context.Context, *EchoPayload) (res *EchoResult, err error)
+}
+
+// Auther defines the authorization functions to be implemented by the service.
+type Auther interface {
+	// JWTAuth implements the authorization logic for the JWT security scheme.
+	JWTAuth(ctx context.Context, token string, schema *security.JWTScheme) (context.Context, error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -38,12 +45,29 @@ const ServiceName = "api"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [3]string{"CounterGet", "CounterIncrement", "Echo"}
+var MethodNames = [3]string{"AuthToken", "CounterGet", "CounterIncrement"}
+
+// AuthTokenPayload is the payload type of the api service AuthToken method.
+type AuthTokenPayload struct {
+	Provider    string
+	AccessToken string
+}
+
+// AuthTokenResult is the result type of the api service AuthToken method.
+type AuthTokenResult struct {
+	Token string
+}
+
+// CounterGetPayload is the payload type of the api service CounterGet method.
+type CounterGetPayload struct {
+	Token string
+}
 
 // CounterIncrementPayload is the payload type of the api service
 // CounterIncrement method.
 type CounterIncrementPayload struct {
-	User string
+	Token string
+	User  string
 }
 
 // CounterInfo is the result type of the api service CounterGet method.
@@ -52,16 +76,6 @@ type CounterInfo struct {
 	LastIncrementBy string
 	LastIncrementAt string
 	NextFinalizeAt  string
-}
-
-// EchoPayload is the payload type of the api service Echo method.
-type EchoPayload struct {
-	Text string
-}
-
-// EchoResult is the result type of the api service Echo method.
-type EchoResult struct {
-	Text string
 }
 
 // MakeUnauthorized builds a goa.ServiceError from an error.

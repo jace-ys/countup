@@ -57,12 +57,12 @@ func (s *AdminServer) Serve(ctx context.Context) error {
 func (s *AdminServer) router(ctx context.Context) http.Handler {
 	s.mux.Get("/healthz", health.NewHandler(healthz.NewChecker(s.checks...)))
 
-	goamux := goahttp.NewMuxer()
-	debug.MountPprofHandlers(debug.Adapt(goamux), debug.WithPrefix("/pprof"))
+	mux := goahttp.NewMuxer()
+	debug.MountPprofHandlers(debug.Adapt(mux), debug.WithPrefix("/pprof"))
 	if s.debug {
-		debug.MountDebugLogEnabler(debug.Adapt(goamux), debug.WithPath("/settings"))
+		debug.MountDebugLogEnabler(debug.Adapt(mux), debug.WithPath("/settings"))
 	}
-	s.mux.Mount("/debug", goamux)
+	s.mux.Mount("/debug", mux)
 
 	logCtx := log.With(ctx, slog.KV("server", s.Name()))
 	return chainMiddleware(s.mux,

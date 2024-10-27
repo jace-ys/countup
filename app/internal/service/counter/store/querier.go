@@ -11,12 +11,12 @@ import (
 )
 
 type Querier interface {
+	DeleteIncrementRequests(ctx context.Context, db DBTX) error
 	GetCounter(ctx context.Context, db DBTX) (Counter, error)
 	IncrementCounter(ctx context.Context, db DBTX, arg IncrementCounterParams) error
-	InsertIncrementRequest(ctx context.Context, db DBTX, arg InsertIncrementRequestParams) (int64, error)
+	InsertIncrementRequest(ctx context.Context, db DBTX, arg InsertIncrementRequestParams) error
 	ListIncrementRequests(ctx context.Context, db DBTX) ([]IncrementRequest, error)
 	ResetCounter(ctx context.Context, db DBTX) error
-	TruncateIncrementRequests(ctx context.Context, db DBTX) error
 	UpdateCounterFinalizeTime(ctx context.Context, db DBTX, nextFinalizeAt pgtype.Timestamptz) error
 }
 
