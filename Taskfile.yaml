@@ -21,6 +21,7 @@ tasks:
       OTEL_GO_X_EXEMPLAR: true
       OTEL_RESOURCE_ATTRIBUTES: tier=app,environment=local
       DATABASE_CONNECTION_URI: postgresql://countup:countup@localhost:5432/countup
+      OAUTH_REDIRECT_URL: https://localhost:4043/login/google/callback
 
   run:client:
     deps: ['gen']
@@ -115,13 +116,11 @@ tasks:
     cmds:
     - docker build --build-arg LDFLAGS='{{ .LDFLAGS | join " " }}' -t jace-ys/countup:{{ .VERSION }} .
 
-  certs:local:*:
-    dir: infra/environments/local/compose
-    vars:
-      APP: '{{ index .MATCH 0 }}'
+  certs:traefik:
+    dir: infra/environments/local/compose/traefik/certs
     cmds:
     - mkcert -install
-    - mkcert -cert-file {{ .APP }}/certs/cert.pem -key-file {{ .APP }}/certs/key.pem localhost 127.0.0.1 ::1
+    - mkcert -cert-file traefik.cert -key-file traefik.key localhost 127.0.0.1 ::1
 
   compose:
     ignore_error: true

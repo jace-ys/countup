@@ -38,11 +38,6 @@ type ServerCmd struct {
 	Port      int `env:"PORT" default:"8080" help:"Port for application server to listen on."`
 	AdminPort int `env:"ADMIN_PORT" default:"9090" help:"Port for admin server to listen on."`
 
-	TLS struct {
-		CertFile string `env:"CERT_FILE" default:"/etc/ssl/certs/cert.pem" help:"TLS certificate."`
-		KeyFile  string `env:"KEY_FILE" default:"/etc/ssl/certs/key.pem" help:"TLS key."`
-	} `embed:"" envprefix:"TLS_" prefix:"tls."`
-
 	OTLP struct {
 		MetricsEndpoint string `env:"METRICS_ENDPOINT" default:"127.0.0.1:4317" help:"OTLP gRPC endpoint to send OpenTelemetry metrics to."`
 		TracesEndpoint  string `env:"TRACES_ENDPOINT" default:"127.0.0.1:4317" help:"OTLP gRPC endpoint to send OpenTelemetry traces to."`
@@ -56,15 +51,15 @@ type ServerCmd struct {
 		Concurrency int `env:"CONCURRENCY" default:"50" help:"Number of workers to run in the worker pool."`
 	} `embed:"" envprefix:"WORKER_" prefix:"worker."`
 
-	Counter struct {
-		FinalizeWindow time.Duration `env:"FINALIZE_WINDOW" default:"1m" help:"Time period to wait before finalizing counter increments."`
-	} `embed:"" envprefix:"COUNTER_" prefix:"counter."`
-
 	OAuth struct {
 		ClientID     string `env:"CLIENT_ID" required:"" help:"Client ID for the Google OAuth2 configuration."`
 		ClientSecret string `env:"CLIENT_SECRET" required:"" help:"Client secret for the Google OAuth2 configuration."`
 		RedirectURL  string `env:"REDIRECT_URL" default:"http://localhost:8080/login/google/callback" help:"URL to redirect to upon successful OAuth2 authentication."`
 	} `embed:"" envprefix:"OAUTH_" prefix:"oauth."`
+
+	Counter struct {
+		FinalizeWindow time.Duration `env:"FINALIZE_WINDOW" default:"1m" help:"Time period to wait before finalizing counter increments."`
+	} `embed:"" envprefix:"COUNTER_" prefix:"counter."`
 }
 
 func (c *ServerCmd) Run(ctx context.Context, g *Globals) error {
@@ -96,8 +91,8 @@ func (c *ServerCmd) Run(ctx context.Context, g *Globals) error {
 	counterSvc := counter.New(db, worker, counterstore.New(), c.Counter.FinalizeWindow)
 	// userSvc := user.New(db, counterstore.New())
 
-	httpSrv := app.NewHTTPServer(ctx, "app.http", c.Port, c.TLS.CertFile, c.TLS.KeyFile)
-	grpcSrv := app.NewGRPCServer[apipb.APIServer](ctx, "app.grpc", c.Port+1, c.TLS.CertFile, c.TLS.KeyFile)
+	httpSrv := app.NewHTTPServer(ctx, "app.http", c.Port)
+	grpcSrv := app.NewGRPCServer[apipb.APIServer](ctx, "app.grpc", c.Port+1)
 
 	admin := app.NewAdminServer(ctx, c.AdminPort, g.Debug)
 	admin.Administer(httpSrv, grpcSrv, worker)

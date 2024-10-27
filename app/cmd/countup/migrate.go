@@ -13,7 +13,7 @@ import (
 )
 
 type MigrateCmd struct {
-	Command string   `arg:"" help:"The command to pass to goose migrate."`
+	Command string   `arg:"" help:"Command to pass to goose migrate."`
 	Args    []string `arg:"" optional:"" passthrough:"" help:"Additional args to pass to goose migrate."`
 
 	Database struct {

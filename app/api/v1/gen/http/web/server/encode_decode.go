@@ -113,6 +113,7 @@ func EncodeLoginGoogleResponse(encoder func(context.Context, http.ResponseWriter
 			Value:    sessionCookie,
 			MaxAge:   86400,
 			Path:     "/",
+			Secure:   true,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 		})
@@ -162,6 +163,7 @@ func EncodeLoginGoogleCallbackResponse(encoder func(context.Context, http.Respon
 			Value:    sessionCookie,
 			MaxAge:   86400,
 			Path:     "/",
+			Secure:   true,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 		})
@@ -246,6 +248,7 @@ func EncodeLogoutResponse(encoder func(context.Context, http.ResponseWriter) goa
 			Value:    sessionCookie,
 			MaxAge:   86400,
 			Path:     "/",
+			Secure:   true,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 		})

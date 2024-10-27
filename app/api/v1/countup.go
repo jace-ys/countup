@@ -129,8 +129,6 @@ var _ = Service("teapot", func() {
 	Error("unwell")
 
 	Method("Echo", func() {
-		NoSecurity()
-
 		Payload(func() {
 			Field(1, "text", String)
 			Required("text")
@@ -197,7 +195,7 @@ var _ = Service("web", func() {
 				CookieSameSite(CookieSameSiteLax)
 				CookieMaxAge(86400)
 				CookieHTTPOnly()
-				//TODO: CookieSecure()
+				CookieSecure()
 				CookiePath("/")
 			})
 		})
@@ -219,8 +217,11 @@ var _ = Service("web", func() {
 
 		HTTP(func() {
 			GET("/login/google/callback")
-			Param("code", String)
-			Param("state", String)
+			Params(func() {
+				Param("code", String)
+				Param("state", String)
+				Required("code", "state")
+			})
 			Cookie("session_cookie:countup.session")
 			Response(StatusFound, func() {
 				Header("redirect_url:Location", String)
@@ -228,7 +229,7 @@ var _ = Service("web", func() {
 				CookieSameSite(CookieSameSiteLax)
 				CookieMaxAge(86400)
 				CookieHTTPOnly()
-				//TODO: CookieSecure()
+				CookieSecure()
 				CookiePath("/")
 			})
 		})
@@ -255,7 +256,7 @@ var _ = Service("web", func() {
 				CookieSameSite(CookieSameSiteLax)
 				CookieMaxAge(86400)
 				CookieHTTPOnly()
-				//TODO: CookieSecure()
+				CookieSecure()
 				CookiePath("/")
 			})
 		})

@@ -9,7 +9,8 @@ RUN go mod download
 COPY . ./
 RUN CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o dist/ ./cmd/countup/...
 
-FROM scratch
+FROM gcr.io/distroless/static-debian12
 WORKDIR /app
-COPY --from=builder /src/dist /app/bin
+USER nonroot:nonroot
+COPY --from=builder --chown=nonroot:nonroot /src/dist /app/bin
 ENTRYPOINT ["/app/bin/countup"]
