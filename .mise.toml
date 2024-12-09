@@ -2,7 +2,7 @@
 atlas = "0.29.0"
 mkcert = "1.4.4"
 golang = "1.23.3"
-golangci-lint = "1.61.0"
+golangci-lint = "1.62.2"
 protoc = "28.2"
 protoc-gen-go = "1.35.1"
 protoc-gen-go-grpc = "1.5.1"
