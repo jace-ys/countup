@@ -13,10 +13,10 @@ require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/markbates/goth v1.80.0
 	github.com/pressly/goose/v3 v3.23.0
-	github.com/riverqueue/river v0.14.2
-	github.com/riverqueue/river/riverdriver/riverdatabasesql v0.14.2
-	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.14.2
-	github.com/riverqueue/river/rivertype v0.14.2
+	github.com/riverqueue/river v0.14.3
+	github.com/riverqueue/river/riverdriver/riverdatabasesql v0.14.3
+	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.14.3
+	github.com/riverqueue/river/rivertype v0.14.3
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0
@@ -54,8 +54,8 @@ require (
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/riverqueue/river/riverdriver v0.14.2 // indirect
-	github.com/riverqueue/river/rivershared v0.14.2 // indirect
+	github.com/riverqueue/river/riverdriver v0.14.3 // indirect
+	github.com/riverqueue/river/rivershared v0.14.3 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
