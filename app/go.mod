@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/markbates/goth v1.80.0
-	github.com/pressly/goose/v3 v3.23.0
+	github.com/pressly/goose/v3 v3.23.1
 	github.com/riverqueue/river v0.14.2
 	github.com/riverqueue/river/riverdriver/riverdatabasesql v0.14.2
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.14.2
@@ -68,7 +68,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.4.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.30.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
