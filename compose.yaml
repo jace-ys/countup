@@ -37,7 +37,7 @@ services:
       OAUTH_REDIRECT_URL: https://localhost:4043/login/google/callback
 
   traefik:
-    image: traefik:v3.2.1
+    image: traefik:v3.2.1@sha256:1a3e33f976d10f45efd613aa64814867068bf51c782599a70ef370447686291b
     labels:
       service: traefik
       tier: ingress
@@ -50,7 +50,7 @@ services:
     - ./infra/environments/local/compose/traefik:/etc/traefik
 
   postgres:
-    image: postgres:15.8-alpine
+    image: postgres:15.8-alpine@sha256:8b963ea3038c3b32182ee7f592ccde21242fa7c5fd9d1b72aa333c27f1bfc809
     labels:
       service: postgres
       component: primary
@@ -92,7 +92,7 @@ services:
     - ./app/schema/migrations:/app/migrations
 
   postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0@sha256:386b12d19eab2a37d7cd8ca8b4c7491cc7a830d9581f49af6c98a393da9605e6
     labels:
       service: postgres
       component: exporter
@@ -109,7 +109,7 @@ services:
       DATA_SOURCE_PASS: countup
 
   grafana:
-    image: grafana/grafana:11.1.4
+    image: grafana/grafana:11.1.4@sha256:886b56d5534e54f69a8cfcb4b8928da8fc753178a7a3d20c3f9b04b660169805
     labels:
       service: grafana
       tier: observability
@@ -126,7 +126,7 @@ services:
     - GF_INSTALL_PLUGINS=https://storage.googleapis.com/integration-artifacts/grafana-lokiexplore-app/grafana-lokiexplore-app-latest.zip;grafana-lokiexplore-app
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.107.0
+    image: otel/opentelemetry-collector-contrib:0.107.0@sha256:b65527791431d76d058b2813748a3f4a8912540d7b23beac2f6b4e02c872f5b7
     labels:
       service: otel-collector
       tier: observability
@@ -149,7 +149,7 @@ services:
     - ./infra/environments/local/compose/otel-collector/config.yaml:/etc/otel-collector/config.yaml
 
   promtail:
-    image: grafana/promtail:3.1.1
+    image: grafana/promtail:3.1.1@sha256:48fba41d9f08c6a56a85b078529dc8550a1809d3e7a9674982e9e9bfbdc854c1
     labels:
       service: promtail
       tier: observability
@@ -166,7 +166,7 @@ services:
     - ./infra/environments/local/compose/promtail/config.yaml:/etc/promtail/config.yaml
 
   loki:
-    image: grafana/loki:3.1.1
+    image: grafana/loki:3.1.1@sha256:e689cc634841c937de4d7ea6157f17e29cf257d6a320f1c293ab18d46cfea986
     labels:
       service: loki
       tier: observability
@@ -179,7 +179,7 @@ services:
     - ./infra/environments/local/compose/loki/config.yaml:/etc/loki/config.yaml
 
   tempo:
-    image: grafana/tempo:2.5.0
+    image: grafana/tempo:2.5.0@sha256:f0200a9bff6d14eb3a4332194f7b77c37ee1a3535e7e41db024d95aab6f1b4e8
     labels:
       service: tempo
       tier: observability
@@ -192,7 +192,7 @@ services:
     - ./infra/environments/local/compose/tempo/config.yaml:/etc/tempo/config.yaml
 
   mimir:
-    image: grafana/mimir:2.13.0
+    image: grafana/mimir:2.13.0@sha256:8bdec4684b1a8011d5f5f7710fcfd89c42139b181978325b65747e47376f40d7
     labels:
       service: mimir
       tier: observability
