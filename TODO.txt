@@ -3,3 +3,4 @@
 - Templ, Alpine.js, Tailwind, Air
 - Hot reload
 - Scoreboard
+- Use user ID instead of email?

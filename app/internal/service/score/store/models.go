@@ -2,10 +2,9 @@
 // versions:
 //   sqlc v1.28.0
 
-package userstore
+package scorestore
 
 import (
-	"github.com/jace-ys/countup/internal/idgen"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -28,6 +27,6 @@ type Score struct {
 }
 
 type User struct {
-	ID    idgen.ID[idgen.User]
+	ID    string
 	Email string
 }

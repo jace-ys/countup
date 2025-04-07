@@ -21,6 +21,11 @@ type IncrementRequest struct {
 	RequestedAt pgtype.Timestamptz
 }
 
+type Score struct {
+	UserEmail string
+	Score     int32
+}
+
 type User struct {
 	ID    string
 	Email string

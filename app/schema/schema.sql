@@ -3,6 +3,11 @@ CREATE TABLE users (
   email TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE scores (
+  user_email TEXT NOT NULL REFERENCES users(email),
+  score INTEGER NOT NULL
+);
+
 CREATE TABLE counter (
   id SERIAL PRIMARY KEY CHECK (id = 1),
   count INTEGER NOT NULL,
