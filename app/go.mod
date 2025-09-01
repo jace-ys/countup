@@ -4,7 +4,7 @@ go 1.24.6
 
 require (
 	github.com/alecthomas/kong v1.10.0
-	github.com/alexliesenfeld/health v0.8.0
+	github.com/alexliesenfeld/health v0.8.1
 	github.com/exaring/otelpgx v0.9.1
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
